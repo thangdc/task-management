@@ -5,7 +5,7 @@ The workflow in `.github/workflows/roadmap-agent.yml` is designed to run one sma
 ## Required one-time setup
 
 1. **Use `develop` as the repository default branch.** GitHub scheduled workflows only run from the default branch. In the repository, open **Settings → General → Default branch → Switch to `develop`**. The current workflow PR must be merged first.
-2. **Create a Gemini API key** with access to the Responses API. Add it under **Settings → Secrets and variables → Actions → New repository secret** as `GEMINI_API_KEY`. Create it in Google AI Studio and store it only as a GitHub Actions secret; Gemini API quotas and billing depend on your Google AI Studio setup.
+2. **Create a Gemini API key** for the Gemini API. Add it under **Settings → Secrets and variables → Actions → New repository secret** as `GEMINI_API_KEY`. Create it in Google AI Studio and store it only as a GitHub Actions secret; Gemini API quotas and billing depend on your Google AI Studio setup.
 3. **Create a fine-grained GitHub personal access token** scoped only to `thangdc/task-management`, then add it as `TASK_MANAGEMENT_GITHUB_TOKEN`. Grant:
    - Contents: Read and write
    - Pull requests: Read and write
