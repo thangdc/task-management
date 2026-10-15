@@ -84,7 +84,6 @@ jobs:
           permission-profile: ":workspace"
           safety-strategy: drop-sudo
           allow-users: thangdc
-          output-file: /tmp/roadmap-agent-summary.md
           prompt: |
             You are the autonomous implementation agent for thangdc/task-management.
             Read docs/ROADMAP.md first and follow its product goal, priorities, and acceptance criteria.
@@ -108,11 +107,11 @@ jobs:
           base: develop
           branch: automation/roadmap-agent
           delete-branch: true
-          title: "feat: autonomous roadmap delivery"
+          title: "feat: roadmap iteration #${{ github.run_number }}"
           body: |
             Automated, single-slice roadmap implementation.
 
-            - Agent summary: see the workflow run output and logs.
+            - Agent summary: ${{ steps.codex.outputs.final-message }}
             - Local typecheck, unit tests, and production build must pass before this PR is proposed.
             - The workflow waits for GitHub PR checks and merges only after they pass.
             - After merge, it waits for the testing preview deployment and checks the published URL.
@@ -121,6 +120,8 @@ jobs:
           commit-message: "feat: continue task-management roadmap"
           add-paths: |
             src/**
+            tests/**
+            e2e/**
             public/**
             index.html
             package.json
@@ -128,8 +129,9 @@ jobs:
             tsconfig*.json
             vite.config.*
             vitest.config.*
+            playwright.config.*
             README.md
-            docs/ROADMAP.md
+            docs/**
           signoff: false
 
       - name: Wait for PR checks
