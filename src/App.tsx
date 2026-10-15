@@ -38,6 +38,9 @@ function App() {
   const [tasks, setTasks] = useState<Task[]>(readInitialTasks);
   const [view, setView] = useState<View>("overview");
   const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | TaskStatus>("all");
+  const [priorityFilter, setPriorityFilter] = useState<"all" | TaskPriority>("all");
+  const [sortBy, setSortBy] = useState<"dueDate" | "priority" | "updatedAt">("dueDate");
   const [showComposer, setShowComposer] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -50,7 +53,18 @@ function App() {
     catch { setNotice("Browser storage is unavailable — changes may not survive a refresh."); }
   }, [tasks]);
 
-  const filtered = useMemo(() => tasks.filter(task => task.title.toLowerCase().includes(query.toLowerCase())), [tasks, query]);
+  const filtered = useMemo(() => {
+    const priorityRank: Record<TaskPriority, number> = { high: 0, medium: 1, low: 2 };
+    return tasks
+      .filter(task => task.title.toLowerCase().includes(query.trim().toLowerCase()) || task.notes.toLowerCase().includes(query.trim().toLowerCase()))
+      .filter(task => statusFilter === "all" || task.status === statusFilter)
+      .filter(task => priorityFilter === "all" || task.priority === priorityFilter)
+      .sort((a, b) => sortBy === "priority"
+        ? priorityRank[a.priority] - priorityRank[b.priority] || a.dueDate.localeCompare(b.dueDate)
+        : sortBy === "updatedAt"
+          ? b.updatedAt.localeCompare(a.updatedAt)
+          : a.dueDate.localeCompare(b.dueDate));
+  }, [tasks, query, statusFilter, priorityFilter, sortBy]);
   const activeTasks = tasks.filter(task => task.status !== "done");
   const dueToday = activeTasks.filter(task => task.dueDate <= today);
   const completed = tasks.filter(task => task.status === "done").length;
@@ -176,7 +190,7 @@ function App() {
             <section className="mini-timeline"><div className="mini-timeline-art"><div className="mini-week-labels"><span>THIS WEEK</span><span>UP NEXT</span><span>LATER</span></div>{tasks.slice(0, 4).map((task, index) => <div className="mini-line" key={task.id}><span>{task.title}</span><div className="mini-track"><i style={{ left: `${index * 12}%`, width: `${18 + index * 5}%` }} className={index === 0 ? "mini-bar purple-bar" : index === 1 ? "mini-bar blue-bar" : index === 2 ? "mini-bar green-bar" : "mini-bar orange-bar"} /></div></div>)}</div></section>
           </>}
 
-          {view === "tasks" && <><div className="toolbar"><div className="search-box"><Search size={17} /><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search tasks..." aria-label="Search tasks" /><kbd>⌘ K</kbd></div><span className="toolbar-count">{filtered.length} tasks</span></div><section className="all-tasks-panel"><div className="all-tasks-header"><span>Task</span><span>Priority</span><span>Due date</span><span>Status</span><span /></div>{filtered.map(task => <TaskTableRow key={task.id} task={task} onOpen={() => setSelectedTask(task)} onToggle={() => updateTask(task.id, { status: task.status === "done" ? "todo" : "done", progress: task.status === "done" ? 0 : 100 })} onDelete={() => setTasks(current => current.filter(item => item.id !== task.id))} />)}{filtered.length === 0 && <EmptyState onAdd={() => setShowComposer(true)} />}</section></>}
+          {view === "tasks" && <><div className="toolbar"><div className="search-box"><Search size={17} /><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search tasks or notes..." aria-label="Search tasks or notes" /><kbd>⌘ K</kbd></div><div className="task-filters"><label className="filter-control"><span>Status</span><select aria-label="Filter by status" value={statusFilter} onChange={event => setStatusFilter(event.target.value as "all" | TaskStatus)}><option value="all">All statuses</option><option value="todo">To do</option><option value="in-progress">In progress</option><option value="done">Completed</option></select></label><label className="filter-control"><span>Priority</span><select aria-label="Filter by priority" value={priorityFilter} onChange={event => setPriorityFilter(event.target.value as "all" | TaskPriority)}><option value="all">All priorities</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></label><label className="filter-control"><span>Sort</span><select aria-label="Sort tasks" value={sortBy} onChange={event => setSortBy(event.target.value as "dueDate" | "priority" | "updatedAt")}><option value="dueDate">Due date</option><option value="priority">Priority</option><option value="updatedAt">Recently updated</option></select></label></div><span className="toolbar-count">{filtered.length} of {tasks.length} tasks</span></div><section className="all-tasks-panel"><div className="all-tasks-header"><span>Task</span><span>Priority</span><span>Due date</span><span>Status</span><span /></div>{filtered.map(task => <TaskTableRow key={task.id} task={task} onOpen={() => setSelectedTask(task)} onToggle={() => updateTask(task.id, { status: task.status === "done" ? "todo" : "done", progress: task.status === "done" ? 0 : 100 })} onDelete={() => { if (window.confirm(`Delete "${task.title}"? This cannot be undone.`)) { setTasks(current => current.filter(item => item.id !== task.id)); setNotice("Task deleted"); if (selectedTask?.id === task.id) setSelectedTask(null); } }} />)}{filtered.length === 0 && <EmptyState onAdd={() => setShowComposer(true)} />}</section></>}
 
           {view === "timeline" && <><div className="timeline-toolbar"><div><span className="timeline-live-dot" /> <strong>Live plan</strong><span className="timeline-count">{filtered.length} tasks on timeline</span></div><div className="view-switch" aria-label="Timeline scale">{["Day", "Week", "Month"].map(mode => <button key={mode} className={timelineMode === mode ? "selected" : ""} onClick={() => setTimelineMode(mode)}>{mode}</button>)}</div></div><section className="gantt-panel"><div className="gantt-panel-heading"><div><h2>Work timeline</h2><p>Drag a task bar to adjust dates, or drag its end to change duration.</p></div><span className="timeline-legend"><i className="legend-purple" /> High priority <i className="legend-blue" /> Planned</span></div>{filtered.length ? <div className="gantt-scroll"><div ref={ganttHost} className="gantt-host" /></div> : <EmptyState onAdd={() => setShowComposer(true)} />}</section><p className="timeline-note"><Sparkles size={15} /> Changes made on the timeline are saved locally as you work.</p></>}
 
