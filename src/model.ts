@@ -63,8 +63,10 @@ export function loadTasks(raw: string | null): Task[] {
     const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
     return parsed.flatMap((value): Task[] => {
-      if (!value || typeof value !== "object" || typeof value.id !== "string" || typeof value.title !== "string" || !value.title.trim()) return [];
-      return [normalizeTask(value as Partial<Task> & Pick<Task, "id" | "title">)];
+      if (!value || typeof value !== "object") return [];
+      const row = value as Record<string, unknown>;
+      if (typeof row.id !== "string" || typeof row.title !== "string" || !row.title.trim()) return [];
+      return [normalizeTask(row as Partial<Task> & Pick<Task, "id" | "title">)];
     });
   } catch {
     return [];
