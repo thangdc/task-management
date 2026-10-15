@@ -28,16 +28,11 @@ jobs:
           TASK_MANAGEMENT_GITHUB_TOKEN: ${{ secrets.TASK_MANAGEMENT_GITHUB_TOKEN }}
         run: |
           if [[ -z "$OPENAI_API_KEY" || -z "$TASK_MANAGEMENT_GITHUB_TOKEN" ]]; then
-            {
-              echo "available=false"
-              echo "### Autonomous roadmap delivery is not configured"
-              echo
-              echo "Add repository Actions secrets OPENAI_API_KEY and TASK_MANAGEMENT_GITHUB_TOKEN, then rerun this workflow."
-              echo "The GitHub token needs Contents (read/write), Pull requests (read/write), Actions (read), and Issues (read) access for this repository."
-            } >> "$GITHUB_OUTPUT"
+            echo "available=false" >> "$GITHUB_OUTPUT"
             {
               echo "## Setup required"
               echo "This run did not modify the repository. Add repository Actions secrets OPENAI_API_KEY and TASK_MANAGEMENT_GITHUB_TOKEN."
+              echo "The GitHub token needs Contents (read/write), Pull requests (read/write), Actions (read), and Issues (read) access for this repository."
               echo "Also set the repository default branch to `develop` so the daily schedule is active on the delivery branch."
             } >> "$GITHUB_STEP_SUMMARY"
             exit 0
