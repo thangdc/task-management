@@ -33,7 +33,7 @@ jobs:
               echo "## Setup required"
               echo "This run did not modify the repository. Add repository Actions secrets OPENAI_API_KEY and TASK_MANAGEMENT_GITHUB_TOKEN."
               echo "The GitHub token needs Contents (read/write), Pull requests (read/write), Actions (read), and Issues (read) access for this repository."
-              echo "Also set the repository default branch to `develop` so the daily schedule is active on the delivery branch."
+              echo "The repository default branch is already configured separately; this workflow targets the develop branch."
             } >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
@@ -64,7 +64,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
 
       - name: Install dependencies
         if: steps.secrets.outputs.available == 'true'
