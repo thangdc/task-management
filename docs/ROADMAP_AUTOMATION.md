@@ -5,7 +5,7 @@ The workflow in `.github/workflows/roadmap-agent.yml` is designed to run one sma
 ## Required one-time setup
 
 1. **Use `develop` as the repository default branch.** GitHub scheduled workflows only run from the default branch. In the repository, open **Settings → General → Default branch → Switch to `develop`**. The current workflow PR must be merged first.
-2. **Create an OpenAI API key** with access to the Responses API. Add it under **Settings → Secrets and variables → Actions → New repository secret** as `OPENAI_API_KEY`. This is billed separately from ChatGPT subscriptions and must have API usage/billing enabled.
+2. **Create a Gemini API key** for the Gemini API. Add it under **Settings → Secrets and variables → Actions → New repository secret** as `GEMINI_API_KEY`. Create it in Google AI Studio and store it only as a GitHub Actions secret; Gemini API quotas and billing depend on your Google AI Studio setup.
 3. **Create a fine-grained GitHub personal access token** scoped only to `thangdc/task-management`, then add it as `TASK_MANAGEMENT_GITHUB_TOKEN`. Grant:
    - Contents: Read and write
    - Pull requests: Read and write
@@ -17,7 +17,7 @@ The workflow in `.github/workflows/roadmap-agent.yml` is designed to run one sma
 
 ## Safety and operating behavior
 
-- The workflow uses Codex in a restricted workspace profile, runs typecheck/unit tests/build before proposing code, and does not give the agent the GitHub token directly.
+- The workflow uses the official Google Gemini CLI GitHub Action, runs typecheck/unit tests/build before proposing code, and does not give the agent the GitHub token directly.
 - A separate GitHub token is used only by workflow steps to open/update the PR, read checks, and merge after checks pass.
 - Each run delivers at most one coherent slice. The daily schedule continues until the local-first roadmap is complete.
 - If PR checks or preview deployment fail, the run fails and leaves the state for the next run to investigate before unrelated work.
