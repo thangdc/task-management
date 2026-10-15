@@ -134,31 +134,48 @@ jobs:
             docs/**
           signoff: false
 
-      - name: Wait for PR checks
-        if: steps.secrets.outputs.available == 'true' && steps.cpr.outputs.pull-request-number != ''
+      - name: Resolve PR to verify
+        if: steps.secrets.outputs.available == 'true'
+        id: pr
         env:
           GH_TOKEN: ${{ secrets.TASK_MANAGEMENT_GITHUB_TOKEN }}
-          PR_URL: ${{ steps.cpr.outputs.pull-request-url }}
+          CREATED_PR_URL: ${{ steps.cpr.outputs.pull-request-url }}
+        shell: bash
+        run: |
+          PR_URL="$CREATED_PR_URL"
+          if [[ -z "$PR_URL" ]]; then
+            PR_URL="$(gh pr list --state open --base develop --head automation/roadmap-agent --json url --jq '.[0].url // empty')"
+          fi
+          echo "url=$PR_URL" >> "$GITHUB_OUTPUT"
+          if [[ -n "$PR_URL" ]]; then
+            echo "number=$(gh pr view "$PR_URL" --json number --jq '.number')" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Wait for PR checks
+        if: steps.secrets.outputs.available == 'true' && steps.pr.outputs.url != ''
+        env:
+          GH_TOKEN: ${{ secrets.TASK_MANAGEMENT_GITHUB_TOKEN }}
+          PR_URL: ${{ steps.pr.outputs.url }}
         shell: bash
         run: |
           echo "Waiting for required PR checks on $PR_URL"
           timeout 15m gh pr checks "$PR_URL" --watch --fail-fast
 
       - name: Merge verified PR
-        if: steps.secrets.outputs.available == 'true' && steps.cpr.outputs.pull-request-number != ''
+        if: steps.secrets.outputs.available == 'true' && steps.pr.outputs.url != ''
         env:
           GH_TOKEN: ${{ secrets.TASK_MANAGEMENT_GITHUB_TOKEN }}
-          PR_URL: ${{ steps.cpr.outputs.pull-request-url }}
+          PR_URL: ${{ steps.pr.outputs.url }}
         shell: bash
         run: |
           gh pr merge "$PR_URL" --squash --delete-branch
 
       - name: Wait for preview deployment
-        if: steps.secrets.outputs.available == 'true' && steps.cpr.outputs.pull-request-number != ''
+        if: steps.secrets.outputs.available == 'true' && steps.pr.outputs.url != ''
         id: preview
         env:
           GH_TOKEN: ${{ secrets.TASK_MANAGEMENT_GITHUB_TOKEN }}
-          PR_URL: ${{ steps.cpr.outputs.pull-request-url }}
+          PR_URL: ${{ steps.pr.outputs.url }}
         shell: bash
         run: |
           MERGE_SHA="$(gh pr view "$PR_URL" --json mergeCommit --jq '.mergeCommit.oid')"
@@ -176,12 +193,12 @@ jobs:
           gh run watch "$RUN_ID" --exit-status
 
       - name: Verify published preview URL
-        if: steps.secrets.outputs.available == 'true' && steps.cpr.outputs.pull-request-number != ''
+        if: steps.secrets.outputs.available == 'true' && steps.pr.outputs.url != ''
         shell: bash
         run: |
           curl --fail --silent --show-error --retry 10 --retry-delay 6 --retry-connrefused \
             https://thangdc.github.io/task-management/ -o /tmp/task-management-preview.html
-          grep -qi '<title>.*task-management\|<title>.*Task Management' /tmp/task-management-preview.html
-          echo "Preview URL returned HTTP 200 and includes the app title."
+          grep -qi '<title>.*Taskflow' /tmp/task-management-preview.html
+          echo "Preview URL returned HTTP 200 and includes the Taskflow app title."
           echo "## Preview verification" >> "$GITHUB_STEP_SUMMARY"
           echo "Verified https://thangdc.github.io/task-management/ after the deployment workflow succeeded." >> "$GITHUB_STEP_SUMMARY"
