@@ -108,6 +108,8 @@ jobs:
         if: steps.secrets.outputs.available == 'true'
         id: gemini
         uses: google-github-actions/run-gemini-cli@v0
+        env:
+          GEMINI_CLI_TRUST_WORKSPACE: "true"
         with:
           gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
           prompt: |
