@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   Activity, ArrowDownUp, CalendarDays, Check, ChevronDown, CircleHelp, Clock3,
   Command, Download, LayoutDashboard, ListTodo, Plus, Search, Settings2,
@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import Gantt from "frappe-gantt";
 import type { FrappeTask } from "frappe-gantt";
-import { loadTasks, normalizeTask, shiftDate, STORAGE_KEY, taskProgress, toDateKey, type Task, type TaskPriority, type TaskStatus } from "./model";
+import { CALENDAR_STORAGE_KEY, loadCalendarEntries, loadTasks, normalizeTask, shiftDate, STORAGE_KEY, taskProgress, toDateKey, type CalendarEntry, type CalendarEntryType, type Task, type TaskPriority, type TaskStatus } from "./model";
 
 const today = toDateKey(new Date());
 const day = (offset: number) => shiftDate(today, offset);
@@ -18,7 +18,7 @@ const initialTasks: Task[] = [
   { id: "task-5", title: "Plan next learning block", notes: "Reserve a focused hour for technical learning.", status: "done", priority: "medium", startDate: day(-4), dueDate: day(-2), progress: 100, createdAt: today, updatedAt: today }
 ];
 
-type View = "overview" | "timeline" | "tasks";
+type View = "overview" | "timeline" | "tasks" | "calendar";
 const statusLabel: Record<TaskStatus, string> = { todo: "To do", "in-progress": "In progress", done: "Completed" };
 const priorityLabel: Record<TaskPriority, string> = { low: "Low", medium: "Medium", high: "High" };
 const shortDate = (date: string) => new Date(`${date}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -28,6 +28,11 @@ const parseOptionalHours = (value: string): number | undefined => {
   const hours = Number(value);
   return Number.isFinite(hours) && hours >= 0 ? hours : undefined;
 };
+
+function readInitialCalendarEntries(): CalendarEntry[] {
+  try { return loadCalendarEntries(localStorage.getItem(CALENDAR_STORAGE_KEY)); }
+  catch { return []; }
+}
 
 function readInitialTasks(): Task[] {
   try {
@@ -42,6 +47,7 @@ function readInitialTasks(): Task[] {
 
 function App() {
   const [tasks, setTasks] = useState<Task[]>(readInitialTasks);
+  const [calendarEntries, setCalendarEntries] = useState<CalendarEntry[]>(readInitialCalendarEntries);
   const [view, setView] = useState<View>("overview");
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | TaskStatus>("all");
@@ -77,6 +83,14 @@ function App() {
   const completion = tasks.length ? Math.round(completed / tasks.length * 100) : 0;
   const upcoming = [...filtered].filter(task => task.status !== "done").sort((a, b) => a.dueDate.localeCompare(b.dueDate));
   const updateTask = (id: string, changes: Partial<Task>) => setTasks(current => current.map(task => task.id === id ? normalizeTask({ ...task, ...changes, updatedAt: new Date().toISOString() }) : task));
+  const saveCalendarEntry = (entry: CalendarEntry) => setCalendarEntries(current => [...current.filter(item => item.id !== entry.id), entry].sort((a, b) => a.startDate.localeCompare(b.startDate)));
+  const deleteCalendarEntry = (id: string) => {
+    const entry = calendarEntries.find(item => item.id === id);
+    if (entry && window.confirm(`Delete "${entry.name}" from the working calendar?`)) {
+      setCalendarEntries(current => current.filter(item => item.id !== id));
+      setNotice("Calendar entry deleted");
+    }
+  };
 
   useEffect(() => {
     if (view !== "timeline" || !ganttHost.current) return;
@@ -130,7 +144,8 @@ function App() {
   const navItems: { id: View; label: string; icon: typeof LayoutDashboard }[] = [
     { id: "overview", label: "Overview", icon: LayoutDashboard },
     { id: "timeline", label: "Gantt timeline", icon: Activity },
-    { id: "tasks", label: "All tasks", icon: ListTodo }
+    { id: "tasks", label: "All tasks", icon: ListTodo },
+    { id: "calendar", label: "Working calendar", icon: CalendarDays }
   ];
 
   return (
@@ -164,7 +179,7 @@ function App() {
 
         <div className="page-content">
           <section className="welcome-row">
-            <div><div className="eyebrow"><span className="eyebrow-line" /> YOUR PERSONAL COMMAND CENTER</div><h1>{view === "overview" ? "Make space for what matters." : view === "timeline" ? "See the work ahead." : "Every task, in one place."}</h1><p>{view === "overview" ? "A clearer plan starts with one small step." : view === "timeline" ? "Move tasks through time. Keep your plan realistic." : "Capture it, prioritize it, then make progress."}</p></div>
+            <div><div className="eyebrow"><span className="eyebrow-line" /> YOUR PERSONAL COMMAND CENTER</div><h1>{view === "overview" ? "Make space for what matters." : view === "timeline" ? "See the work ahead." : view === "calendar" ? "Make room for time off." : "Every task, in one place."}</h1><p>{view === "overview" ? "A clearer plan starts with one small step." : view === "timeline" ? "Move tasks through time. Keep your plan realistic." : view === "calendar" ? "Manage holidays, leave and non-working days." : "Capture it, prioritize it, then make progress."}</p></div>
             <button className="primary-button" onClick={() => setShowComposer(value => !value)}><Plus size={18} /> New task</button>
           </section>
 
@@ -198,6 +213,8 @@ function App() {
 
           {view === "tasks" && <><div className="toolbar"><div className="search-box"><Search size={17} /><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search tasks or notes..." aria-label="Search tasks or notes" /><kbd>⌘ K</kbd></div><div className="task-filters"><label className="filter-control"><span>Status</span><select aria-label="Filter by status" value={statusFilter} onChange={event => setStatusFilter(event.target.value as "all" | TaskStatus)}><option value="all">All statuses</option><option value="todo">To do</option><option value="in-progress">In progress</option><option value="done">Completed</option></select></label><label className="filter-control"><span>Priority</span><select aria-label="Filter by priority" value={priorityFilter} onChange={event => setPriorityFilter(event.target.value as "all" | TaskPriority)}><option value="all">All priorities</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></label><label className="filter-control"><span>Sort</span><select aria-label="Sort tasks" value={sortBy} onChange={event => setSortBy(event.target.value as "dueDate" | "priority" | "updatedAt")}><option value="dueDate">Due date</option><option value="priority">Priority</option><option value="updatedAt">Recently updated</option></select></label></div><span className="toolbar-count">{filtered.length} of {tasks.length} tasks</span></div><section className="all-tasks-panel"><div className="all-tasks-header"><span>Task</span><span>Priority</span><span>Due date</span><span>Status</span><span /></div>{filtered.map(task => <TaskTableRow key={task.id} task={task} onOpen={() => setSelectedTask(task)} onToggle={() => updateTask(task.id, { status: task.status === "done" ? "todo" : "done", progress: task.status === "done" ? 0 : 100 })} onDelete={() => { if (window.confirm(`Delete "${task.title}"? This cannot be undone.`)) { setTasks(current => current.filter(item => item.id !== task.id)); setNotice("Task deleted"); if (selectedTask?.id === task.id) setSelectedTask(null); } }} />)}{filtered.length === 0 && <EmptyState onAdd={() => setShowComposer(true)} />}</section></>}
 
+          {view === "calendar" && <CalendarManager entries={calendarEntries} onSave={entry => { saveCalendarEntry(entry); setNotice("Calendar entry saved"); }} onDelete={deleteCalendarEntry} />}
+
           {view === "timeline" && <><div className="timeline-toolbar"><div><span className="timeline-live-dot" /> <strong>Live plan</strong><span className="timeline-count">{filtered.length} tasks on timeline</span></div><div className="view-switch" aria-label="Timeline scale">{["Day", "Week", "Month"].map(mode => <button key={mode} className={timelineMode === mode ? "selected" : ""} onClick={() => setTimelineMode(mode)}>{mode}</button>)}</div></div><section className="gantt-panel"><div className="gantt-panel-heading"><div><h2>Work timeline</h2><p>Drag a task bar to adjust dates, or drag its end to change duration.</p></div><span className="timeline-legend"><i className="legend-purple" /> High priority <i className="legend-blue" /> Planned</span></div>{filtered.length ? <div className="gantt-scroll"><div ref={ganttHost} className="gantt-host" /></div> : <EmptyState onAdd={() => setShowComposer(true)} />}</section><p className="timeline-note"><Sparkles size={15} /> Changes made on the timeline are saved locally as you work.</p></>}
 
           <footer className="page-footer"><span>© 2026 Taskflow <span className="footer-separator">·</span> Built for focused work</span><span><span className="footer-status" /> Your changes are saved in this browser</span></footer>
@@ -207,6 +224,72 @@ function App() {
       {selectedTask && <TaskEditor task={selectedTask} onClose={() => setSelectedTask(null)} onSave={changes => { updateTask(selectedTask.id, changes); setSelectedTask(null); }} />}
     </div>
   );
+}
+
+
+function CalendarManager({ entries, onSave, onDelete }: {
+  entries: CalendarEntry[];
+  onSave: (entry: CalendarEntry) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [name, setName] = useState("");
+  const [type, setType] = useState<CalendarEntryType>("holiday");
+  const [startDate, setStartDate] = useState(today);
+  const [endDate, setEndDate] = useState(today);
+  const [error, setError] = useState("");
+
+  const reset = () => {
+    setEditingId(null);
+    setName("");
+    setType("holiday");
+    setStartDate(today);
+    setEndDate(today);
+    setError("");
+  };
+  const edit = (entry: CalendarEntry) => {
+    setEditingId(entry.id);
+    setName(entry.name);
+    setType(entry.type);
+    setStartDate(entry.startDate);
+    setEndDate(entry.endDate);
+    setError("");
+  };
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!name.trim()) { setError("Enter a name for this calendar entry."); return; }
+    if (endDate < startDate) { setError("End date must be on or after the start date."); return; }
+    onSave({ id: editingId ?? crypto.randomUUID(), name: name.trim(), type, startDate, endDate });
+    reset();
+  };
+  const formatRange = (start: string, end: string) => {
+    const format = (value: string) => new Date(`${value}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    return start === end ? format(start) : `${format(start)} – ${format(end)}`;
+  };
+  const typeLabel: Record<CalendarEntryType, string> = { holiday: "Holiday", leave: "Personal leave", other: "Other day off" };
+
+  return <div className="calendar-manager">
+    <section className="calendar-form-panel">
+      <div className="calendar-section-heading"><div><span className="editor-eyebrow">{editingId ? "EDIT ENTRY" : "ADD TIME OFF"}</span><h2>{editingId ? "Update calendar entry" : "Add a holiday or leave"}</h2><p>Entries are inclusive and can cover one day or a date range.</p></div></div>
+      <form onSubmit={submit}>
+        <label>Title<input required value={name} onChange={event => setName(event.target.value)} placeholder="e.g. Lunar New Year holiday" /></label>
+        <label>Type<select value={type} onChange={event => setType(event.target.value as CalendarEntryType)}><option value="holiday">Public / company holiday</option><option value="leave">Personal leave</option><option value="other">Other non-working day</option></select></label>
+        <div className="editor-two-col"><label>Start date<input type="date" required value={startDate} onChange={event => { setStartDate(event.target.value); if (endDate < event.target.value) setEndDate(event.target.value); }} /></label><label>End date<input type="date" required min={startDate} value={endDate} onChange={event => setEndDate(event.target.value)} /></label></div>
+        {error && <p className="calendar-form-error" role="alert">{error}</p>}
+        <div className="calendar-form-actions"><button className="primary-button" type="submit"><Check size={15} />{editingId ? "Save changes" : "Add to calendar"}</button>{editingId && <button className="secondary-button" type="button" onClick={reset}>Cancel</button>}</div>
+      </form>
+    </section>
+    <section className="calendar-list-panel">
+      <div className="calendar-section-heading"><div><h2>Days off</h2><p>{entries.length} calendar {entries.length === 1 ? "entry" : "entries"}</p></div></div>
+      {entries.length === 0 ? <div className="calendar-empty"><CalendarDays size={22} /><strong>No days off added yet</strong><span>Add public holidays or your planned leave to make the Gantt calendar reflect your availability.</span></div> :
+        [...entries].sort((a, b) => a.startDate.localeCompare(b.startDate)).map(entry => <article className="calendar-entry-row" key={entry.id}>
+          <div className={`calendar-entry-icon calendar-entry-${entry.type}`}><CalendarDays size={17} /></div>
+          <div className="calendar-entry-copy"><strong>{entry.name}</strong><span>{typeLabel[entry.type]} · {formatRange(entry.startDate, entry.endDate)}</span></div>
+          <div className="calendar-entry-actions"><button type="button" className="secondary-button" onClick={() => edit(entry)}>Edit</button><button type="button" className="calendar-delete-button" onClick={() => onDelete(entry.id)} aria-label={`Delete ${entry.name}`}><Trash2 size={15} /></button></div>
+        </article>)}
+    </section>
+    <p className="calendar-footnote">Calendar entries are stored locally in this browser. Overlapping entries are allowed and remain separate so you can record, for example, a public holiday during a personal leave period.</p>
+  </div>;
 }
 
 function TaskEffortSummary({ task }: { task: Task }) {

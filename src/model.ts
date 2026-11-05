@@ -1,5 +1,14 @@
 export type TaskStatus = "todo" | "in-progress" | "done";
 export type TaskPriority = "low" | "medium" | "high";
+export type CalendarEntryType = "holiday" | "leave" | "other";
+
+export interface CalendarEntry {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  type: CalendarEntryType;
+}
 
 export interface Task {
   id: string;
@@ -17,6 +26,7 @@ export interface Task {
 }
 
 export const STORAGE_KEY = "task-management.tasks.v1";
+export const CALENDAR_STORAGE_KEY = "task-management.calendar.v1";
 
 export function toDateKey(date: Date): string {
   const year = date.getFullYear();
@@ -85,4 +95,33 @@ export function loadTasks(raw: string | null): Task[] {
 
 export function taskProgress(status: TaskStatus, progress: number): number {
   return status === "done" ? 100 : Math.max(0, Math.min(100, Math.round(progress)));
+}
+
+export function normalizeCalendarEntry(value: unknown): CalendarEntry | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  if (typeof row.id !== "string" || typeof row.name !== "string" || !row.name.trim()) return null;
+  if (!isDateKey(row.startDate) || !isDateKey(row.endDate) || row.endDate < row.startDate) return null;
+  if (row.type !== "holiday" && row.type !== "leave" && row.type !== "other") return null;
+  return {
+    id: row.id,
+    name: row.name.trim(),
+    startDate: row.startDate,
+    endDate: row.endDate,
+    type: row.type
+  };
+}
+
+export function loadCalendarEntries(raw: string | null): CalendarEntry[] {
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.flatMap((value): CalendarEntry[] => {
+      const entry = normalizeCalendarEntry(value);
+      return entry ? [entry] : [];
+    });
+  } catch {
+    return [];
+  }
 }

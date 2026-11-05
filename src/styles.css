@@ -19,3 +19,35 @@
 .effort-summary{display:block;margin-top:4px;color:#8274c8;font-size:9px;font-weight:600;line-height:1.4;white-space:normal}
 .effort-inputs{margin-top:2px}
 .effort-hint{margin:-5px 0 14px;color:#9a9bad;font-size:9px}
+
+
+/* Local working calendar and holiday management */
+.calendar-manager{display:grid;grid-template-columns:minmax(280px,.85fr) minmax(360px,1.15fr);gap:16px;align-items:start}
+.calendar-form-panel,.calendar-list-panel{background:#fff;border:1px solid #eeeef5;border-radius:12px;padding:21px}
+.calendar-section-heading{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px}
+.calendar-section-heading h2{font:800 16px Manrope,sans-serif;color:#303148;margin:5px 0}
+.calendar-section-heading p{font-size:10px;color:#9a9bad;margin:0}
+.calendar-form-panel form>label{display:block;font-size:10px;color:#77788e;font-weight:600;margin:0 0 14px}
+.calendar-form-panel input,.calendar-form-panel select{display:block;width:100%;border:1px solid #e6e6ef;background:#fcfcfe;border-radius:8px;padding:10px 11px;margin-top:7px;color:#37384d;font-size:11px}
+.calendar-form-actions{display:flex;align-items:center;gap:9px;margin-top:4px}
+.calendar-form-error{font-size:10px;color:#c45c58;margin:-4px 0 12px}
+.calendar-empty{min-height:170px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;color:#9a9bad;padding:20px}
+.calendar-empty svg{color:#8d7ae8}
+.calendar-empty strong{font-size:11px;color:#66677d}
+.calendar-empty span{max-width:290px;font-size:10px;line-height:1.6}
+.calendar-entry-row{display:flex;align-items:center;gap:12px;padding:13px 0;border-top:1px solid #f0f0f5}
+.calendar-entry-icon{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;flex-shrink:0}
+.calendar-entry-holiday{background:#fff3e8;color:#d38b4e}
+.calendar-entry-leave{background:#f0edff;color:#7967dc}
+.calendar-entry-other{background:#eaf6f2;color:#56a98b}
+.calendar-entry-copy{flex:1;min-width:0}
+.calendar-entry-copy strong,.calendar-entry-copy span{display:block}
+.calendar-entry-copy strong{font-size:11px;color:#4b4c62}
+.calendar-entry-copy span{font-size:9px;color:#999bad;margin-top:5px}
+.calendar-entry-actions{display:flex;align-items:center;gap:6px}
+.calendar-entry-actions .secondary-button{padding:7px 9px;font-size:9px}
+.calendar-delete-button{width:30px;height:30px;border:0;border-radius:7px;background:transparent;color:#b2b3c0;display:grid;place-items:center}
+.calendar-delete-button:hover{background:#fff0ef;color:#d46d68}
+.calendar-footnote{grid-column:1/-1;font-size:10px;color:#999bad;margin:0}
+@media(max-width:900px){.calendar-manager{grid-template-columns:1fr}.calendar-footnote{grid-column:auto}}
+@media(max-width:560px){.calendar-form-panel,.calendar-list-panel{padding:15px}.calendar-entry-row{gap:8px}.calendar-entry-actions{gap:3px}.calendar-entry-actions .secondary-button{padding:6px 7px}}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isDateKey, loadTasks, normalizeTask, shiftDate, taskProgress } from "./model";
+import { isDateKey, loadCalendarEntries, loadTasks, normalizeCalendarEntry, normalizeTask, shiftDate, taskProgress } from "./model";
 
 describe("date-only helpers", () => {
   it("validates real calendar dates", () => {
@@ -52,5 +52,39 @@ describe("task normalization", () => {
   it("returns an empty list for malformed storage and filters invalid rows", () => {
     expect(loadTasks("{not json")).toEqual([]);
     expect(loadTasks(JSON.stringify([{ id: "ok", title: "Valid" }, { id: 3, title: "Bad" }, { id: "blank", title: " " }]))).toHaveLength(1);
+  });
+});
+
+describe("working calendar entries", () => {
+  it("accepts named inclusive single-day and multi-day calendar entries", () => {
+    expect(normalizeCalendarEntry({
+      id: "holiday-1", name: "National holiday", startDate: "2026-12-25", endDate: "2026-12-25", type: "holiday"
+    })).toEqual({
+      id: "holiday-1", name: "National holiday", startDate: "2026-12-25", endDate: "2026-12-25", type: "holiday"
+    });
+    expect(normalizeCalendarEntry({
+      id: "leave-1", name: "Annual leave", startDate: "2026-12-28", endDate: "2026-12-31", type: "leave"
+    })?.endDate).toBe("2026-12-31");
+  });
+
+  it("rejects empty names, invalid dates, reversed ranges and unknown types", () => {
+    expect(normalizeCalendarEntry({ id: "x", name: " ", startDate: "2026-12-01", endDate: "2026-12-02", type: "holiday" })).toBeNull();
+    expect(normalizeCalendarEntry({ id: "x", name: "Bad date", startDate: "2026-02-30", endDate: "2026-03-02", type: "holiday" })).toBeNull();
+    expect(normalizeCalendarEntry({ id: "x", name: "Reversed", startDate: "2026-12-03", endDate: "2026-12-02", type: "leave" })).toBeNull();
+    expect(normalizeCalendarEntry({ id: "x", name: "Unknown", startDate: "2026-12-01", endDate: "2026-12-02", type: "sick" })).toBeNull();
+  });
+
+  it("loads valid entries and ignores malformed entries without losing valid ones", () => {
+    const raw = JSON.stringify([
+      { id: "a", name: "Christmas", startDate: "2026-12-25", endDate: "2026-12-25", type: "holiday" },
+      { id: "bad", name: "Broken", startDate: "2026-02-30", endDate: "2026-03-01", type: "holiday" }
+    ]);
+    expect(loadCalendarEntries(raw)).toHaveLength(1);
+    const overlapping = JSON.stringify([
+      { id: "holiday", name: "Public holiday", startDate: "2026-12-25", endDate: "2026-12-26", type: "holiday" },
+      { id: "leave", name: "Personal leave", startDate: "2026-12-26", endDate: "2026-12-28", type: "leave" }
+    ]);
+    expect(loadCalendarEntries(overlapping)).toHaveLength(2);
+    expect(loadCalendarEntries("{broken")).toEqual([]);
   });
 });
