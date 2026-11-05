@@ -187,6 +187,7 @@ function App() {
     try {
       new Gantt(host, rows, {
         view_mode: timelineMode,
+        container_height: Math.max(420, window.innerHeight - 220),
         view_modes: [ganttViewModes.find(mode => mode.name === timelineMode)!, ...ganttViewModes.filter(mode => mode.name !== timelineMode)],
         date_format: "YYYY-MM-DD",
         language: "en",
@@ -280,11 +281,14 @@ function App() {
           <div className="top-actions"><span className="local-pill"><span /> Local mode</span><button className="icon-button" aria-label="Export backup" title="Export backup" onClick={exportTasks}><Download size={17} /></button><button className="avatar-button" aria-label="Workspace menu">T</button></div>
         </header>
 
-        <div className="page-content">
-          <section className="welcome-row">
-            <div><div className="eyebrow"><span className="eyebrow-line" /> YOUR PERSONAL COMMAND CENTER</div><h1>{view === "overview" ? "Make space for what matters." : view === "timeline" ? "See the work ahead." : view === "calendar" ? "Make room for time off." : "Every task, in one place."}</h1><p>{view === "overview" ? "A clearer plan starts with one small step." : view === "timeline" ? "Move tasks through time. Keep your plan realistic." : view === "calendar" ? "Manage holidays, leave and non-working days." : "Capture it, prioritize it, then make progress."}</p></div>
+        <div className={view === "timeline" ? "page-content timeline-workspace" : "page-content"}>
+          {view === "timeline" ? <section className="timeline-workspace-header">
+            <div><div className="eyebrow"><span className="eyebrow-line" /> PLANNING WORKSPACE</div><h1>Work timeline</h1><p>Plan task dates, effort and time off in one place.</p></div>
             <button className="primary-button" onClick={() => setShowComposer(value => !value)}><Plus size={18} /> New task</button>
-          </section>
+          </section> : <section className="welcome-row">
+            <div><div className="eyebrow"><span className="eyebrow-line" /> YOUR PERSONAL COMMAND CENTER</div><h1>{view === "overview" ? "Make space for what matters." : view === "calendar" ? "Make room for time off." : "Every task, in one place."}</h1><p>{view === "overview" ? "A clearer plan starts with one small step." : view === "calendar" ? "Manage holidays, leave and non-working days." : "Capture it, prioritize it, then make progress."}</p></div>
+            <button className="primary-button" onClick={() => setShowComposer(value => !value)}><Plus size={18} /> New task</button>
+          </section>}
 
           {showComposer && <form className="quick-add" onSubmit={event => { event.preventDefault(); addTask(); }}><span className="quick-add-icon"><Plus size={18} /></span><input autoFocus value={draftTitle} onChange={event => setDraftTitle(event.target.value)} placeholder="What do you want to get done?" aria-label="New task title" /><button className="primary-button" type="submit">Add task</button><button className="icon-button" type="button" aria-label="Cancel adding task" onClick={() => setShowComposer(false)}><X size={17} /></button></form>}
 
@@ -318,9 +322,9 @@ function App() {
 
           {view === "calendar" && <CalendarManager entries={calendarEntries} onSave={entry => { saveCalendarEntry(entry); setNotice("Calendar entry saved"); }} onDelete={deleteCalendarEntry} />}
 
-          {view === "timeline" && <><div className="timeline-toolbar"><div><span className="timeline-live-dot" /> <strong>Live plan</strong><span className="timeline-count">{filtered.length} tasks on timeline</span></div><div className="view-switch" aria-label="Timeline scale">{["Day", "Week", "Month"].map(mode => <button key={mode} className={timelineMode === mode ? "selected" : ""} onClick={() => setTimelineMode(mode)}>{mode}</button>)}</div></div><section className="gantt-panel"><div className="gantt-panel-heading"><div><h2>Work timeline</h2><p>Drag a task bar to adjust dates, or drag its end to change duration.</p></div><span className="timeline-legend"><i className="legend-purple" /> High priority <i className="legend-blue" /> Planned <i className="legend-weekend" /> Weekend <i className="legend-holiday" /> Holiday <i className="legend-leave" /> Leave <i className="legend-other" /> Other</span></div>{filtered.length ? <div className="gantt-scroll"><div ref={ganttHost} className="gantt-host" /></div> : <EmptyState onAdd={() => setShowComposer(true)} />}</section><p className="timeline-note"><Sparkles size={15} /> Changes made on the timeline are saved locally as you work.</p></>}
+          {view === "timeline" && <><div className="timeline-toolbar"><div><span className="timeline-live-dot" /> <strong>Live plan</strong><span className="timeline-count">{filtered.length} tasks on timeline</span></div><div className="view-switch" aria-label="Timeline scale">{["Day", "Week", "Month"].map(mode => <button key={mode} className={timelineMode === mode ? "selected" : ""} onClick={() => setTimelineMode(mode)}>{mode}</button>)}</div></div><section className="gantt-panel"><div className="gantt-panel-heading"><div><h2>Schedule</h2><p>Drag a task to move it; use the ends to change its duration.</p></div><span className="timeline-legend"><i className="legend-purple" /> High priority <i className="legend-blue" /> Planned <i className="legend-weekend" /> Weekend <i className="legend-holiday" /> Holiday <i className="legend-leave" /> Leave <i className="legend-other" /> Other</span></div>{filtered.length ? <div className="gantt-scroll"><div ref={ganttHost} className="gantt-host" /></div> : <EmptyState onAdd={() => setShowComposer(true)} />}</section><p className="timeline-note"><Sparkles size={15} /> Changes made on the timeline are saved locally as you work.</p></>}
 
-          <footer className="page-footer"><span>© 2026 Taskflow <span className="footer-separator">·</span> Built for focused work</span><span><span className="footer-status" /> Your changes are saved in this browser</span></footer>
+          {view !== "timeline" && <footer className="page-footer"><span>© 2026 Taskflow <span className="footer-separator">·</span> Built for focused work</span><span><span className="footer-status" /> Your changes are saved in this browser</span></footer>
         </div>
       </main>
 
