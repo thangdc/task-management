@@ -7,7 +7,9 @@ A personal task manager built around a calm daily dashboard and an interactive G
 - Daily overview with open, due-today, and completed task summaries.
 - Quick task capture, task details, priorities, status, start/due dates, notes, and estimated/actual effort hours.
 - List search, completion toggle, deletion, and timeline view.
-- Gantt date/progress interactions, daily weekday labels, weekend shading, and named holiday/leave overlays.\n- Working calendar for public/company holidays, personal leave, and other non-working date ranges.\n- Timeline-first planning workspace with a full-width, viewport-height Gantt chart.
+- Gantt date/progress interactions, daily weekday labels, weekend shading, and named holiday/leave overlays.
+- Working calendar for public/company holidays, personal leave, and other non-working date ranges.
+- Timeline-first planning workspace with a full-width, viewport-height Gantt chart.
 - Local-first persistence and versioned JSON backup export for both tasks and working-calendar entries.
 - Responsive layout; no account or backend required for the core experience.
 
