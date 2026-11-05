@@ -97,6 +97,45 @@ export function taskProgress(status: TaskStatus, progress: number): number {
   return status === "done" ? 100 : Math.max(0, Math.min(100, Math.round(progress)));
 }
 
+/** Progress is based on recorded effort whenever both estimate and actual are available. */
+export function taskProgressFromEffort(
+  status: TaskStatus,
+  progress: number,
+  estimateHours?: number,
+  actualHours?: number
+): number {
+  if (status === "done") return 100;
+  if (
+    estimateHours !== undefined && estimateHours > 0 &&
+    actualHours !== undefined &&
+    Number.isFinite(estimateHours) && Number.isFinite(actualHours) &&
+    estimateHours >= 0 && actualHours >= 0
+  ) {
+    return Math.max(0, Math.min(100, Math.round(actualHours / estimateHours * 100)));
+  }
+  return taskProgress(status, progress);
+}
+
+/** Counts inclusive working days using an 8-hour day (08:00–12:00, 13:00–17:00). */
+export function calculateWorkingHours(
+  startDate: string,
+  endDate: string,
+  calendarEntries: CalendarEntry[] = []
+): number {
+  if (!isDateKey(startDate) || !isDateKey(endDate) || endDate < startDate) return 0;
+  let hours = 0;
+  for (let date = startDate; date <= endDate; date = shiftDate(date, 1)) {
+    const weekday = new Date(`${date}T12:00:00`).getDay();
+    const weekend = weekday === 0 || weekday === 6;
+    const dayOff = calendarEntries.some(entry =>
+      (entry.type === "holiday" || entry.type === "leave" || entry.type === "other") &&
+      date >= entry.startDate && date <= entry.endDate
+    );
+    if (!weekend && !dayOff) hours += 8;
+  }
+  return hours;
+}
+
 export function normalizeCalendarEntry(value: unknown): CalendarEntry | null {
   if (!value || typeof value !== "object") return null;
   const row = value as Record<string, unknown>;
