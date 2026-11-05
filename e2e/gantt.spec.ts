@@ -15,7 +15,7 @@ async function dragLocator(page: Page, selector: string, deltaX: number) {
   const bounds = await target.boundingBox();
   expect(bounds).not.toBeNull();
   if (!bounds) throw new Error(`No bounding box for ${selector}`);
-  const x = bounds.x + bounds.width / 2;
+  const x = selector.endsWith(".bar") ? bounds.x + 8 : bounds.x + bounds.width / 2;
   const y = bounds.y + bounds.height / 2;
   await page.mouse.move(x, y);
   await page.mouse.down();
@@ -59,6 +59,6 @@ test("resizing the left and right handles changes the matching date boundaries",
 });
 
 test("a normal click on a task bar still opens its editor", async ({ page }) => {
-  await page.locator('.bar-wrapper[data-id="task-2"] .bar').click();
+  await page.locator('.bar-wrapper[data-id="task-2"] .bar').click({ position: { x: 8, y: 15 } });
   await expect(page.locator(".task-editor")).toBeVisible();
 });
