@@ -43,7 +43,7 @@ export function shiftDate(dateKey: string, days: number): string {
 }
 
 function normalizeOptionalHours(value: unknown): number | undefined {
-  if (value === undefined || value === null || value === "") return undefined;
+  if (value === undefined || value === null || value === "" || (typeof value === "string" && !value.trim())) return undefined;
   const hours = typeof value === "number" ? value : Number(value);
   return Number.isFinite(hours) && hours >= 0 ? hours : undefined;
 }
@@ -144,4 +144,26 @@ export function expandCalendarEntries(entries: CalendarEntry[]): Record<Calendar
     }
   }
   return markers;
+}
+
+
+export function effortVariance(estimateHours?: number, actualHours?: number): number | undefined {
+  if (estimateHours === undefined || actualHours === undefined) return undefined;
+  if (!Number.isFinite(estimateHours) || !Number.isFinite(actualHours) || estimateHours < 0 || actualHours < 0) return undefined;
+  return actualHours - estimateHours;
+}
+
+export interface TaskManagementBackup {
+  version: 2;
+  exportedAt: string;
+  tasks: Task[];
+  calendarEntries: CalendarEntry[];
+}
+
+export function createBackupPayload(
+  tasks: Task[],
+  calendarEntries: CalendarEntry[],
+  exportedAt = new Date().toISOString()
+): TaskManagementBackup {
+  return { version: 2, exportedAt, tasks, calendarEntries };
 }
