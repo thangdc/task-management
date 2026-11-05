@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   Activity, ArrowDownUp, CalendarDays, Check, ChevronDown, CircleHelp, Clock3,
   Command, Download, LayoutDashboard, ListTodo, Plus, Search, Settings2,
@@ -252,7 +252,7 @@ function CalendarManager({ entries, onSave, onDelete }: {
     setEndDate(entry.endDate);
     setError("");
   };
-  const submit = (event: React.FormEvent<HTMLFormElement>) => {
+  const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!name.trim()) { setError("Enter a name for this calendar entry."); return; }
     if (endDate < startDate) { setError("End date must be on or after the start date."); return; }
