@@ -9,5 +9,5 @@ export function isGanttDragGesture(
   threshold = 10
 ): boolean {
   if (!start) return false;
-  return Math.hypot(end.x - start.x, end.y - start.y) > threshold;
+  return Math.abs(end.x - start.x) > threshold;
 }
