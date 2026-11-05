@@ -185,7 +185,7 @@ function App() {
       custom_class: task.status === "done" ? "task-done" : task.priority === "high" ? "task-high" : "task-default"
     }));
     try {
-      new Gantt(host, rows, {
+      new Gantt(host, rows, ({
         view_mode: timelineMode,
         container_height: Math.max(420, window.innerHeight - 220),
         view_modes: [ganttViewModes.find(mode => mode.name === timelineMode)!, ...ganttViewModes.filter(mode => mode.name !== timelineMode)],
@@ -227,7 +227,7 @@ function App() {
             status: progress >= 100 ? "done" : "in-progress"
           });
         }
-      });
+      } as ConstructorParameters<typeof Gantt>[2]));
       // Register after Frappe Gantt so its own mouseup handler runs first.
       document.addEventListener("mouseup", flushPendingDateChange);
     } catch {
