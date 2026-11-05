@@ -27,8 +27,11 @@ async function dragLocator(page: Page, selector: string, deltaX: number) {
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() => localStorage.clear());
+  // Clear only once before the test. addInitScript would also run on reload
+  // and erase the very persistence state the move test is checking.
   await page.goto("/");
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
   await page.getByRole("button", { name: /Gantt timeline/ }).click();
   await expect(page.locator(".gantt .bar-wrapper")).toHaveCount(5);
 });
