@@ -4,7 +4,7 @@
   --g-text-muted:#7c7c7c; --g-text-light:#fff; --g-text-dark:#171717; --g-progress-color:#dbdbdb;
   --g-handle-color:#37352f; --g-weekend-label-color:#dcdce4; --g-expected-progress:#c4c4e9;
   --g-header-background:#fff; --g-row-color:#fdfdfd; --g-row-border-color:#c7c7c7;
-  --g-today-highlight:#37352f; --g-popup-actions:#ebeff2; --g-weekend-highlight-color:#f7f7f7;
+  --g-today-highlight:#37352f; --g-popup-actions:#ebeff2; --g-weekend-highlight-color:#f1f0f6; --g-holiday-highlight-color:#fff0e5; --g-leave-highlight-color:#eeeaff; --g-other-highlight-color:#e9f5ef;
 }
 html[data-theme='dark'] {
   --g-arrow-color:#e5e5e5; --g-bar-color:#2a2a2a; --g-bar-border:#3a3a3a; --g-tick-color-thick:#1a1a1a;
@@ -12,5 +12,5 @@ html[data-theme='dark'] {
   --g-text-muted:#999; --g-text-light:#fff; --g-text-dark:#f5f5f5; --g-progress-color:#4a4a4a;
   --g-handle-color:#d0d0d0; --g-weekend-label-color:#3a3a3a; --g-expected-progress:#5a5a5a;
   --g-header-background:#0a0a0a; --g-row-color:#141414; --g-row-border-color:#2a2a2a;
-  --g-today-highlight:#999; --g-popup-actions:#1a1a1a; --g-weekend-highlight-color:#0f0f0f;
+  --g-today-highlight:#999; --g-popup-actions:#1a1a1a; --g-weekend-highlight-color:#24232b; --g-holiday-highlight-color:#4a3027; --g-leave-highlight-color:#302b4b; --g-other-highlight-color:#263d32;
 }
