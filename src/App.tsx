@@ -191,6 +191,8 @@ function App() {
         view_modes: [ganttViewModes.find(mode => mode.name === timelineMode)!, ...ganttViewModes.filter(mode => mode.name !== timelineMode)],
         date_format: "YYYY-MM-DD",
         language: "en",
+        // Frappe Gantt defaults to today; start at the earliest task so historical work is visible.
+        scroll_to: "start",
         // Compress weekends and configured days off out of the working-time axis.
         ignore: [
           "weekend",
