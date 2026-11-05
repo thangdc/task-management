@@ -7,7 +7,7 @@ import {
 import Gantt from "frappe-gantt";
 import { isGanttDragGesture, type GanttPointerPoint } from "./gantt-interactions";
 import type { FrappeTask, FrappeViewMode } from "frappe-gantt";
-import { CALENDAR_STORAGE_KEY, expandCalendarEntries, loadCalendarEntries, loadTasks, normalizeTask, shiftDate, STORAGE_KEY, taskProgress, toDateKey, type CalendarEntry, type CalendarEntryType, type Task, type TaskPriority, type TaskStatus } from "./model";
+import { CALENDAR_STORAGE_KEY, createBackupPayload, effortVariance, expandCalendarEntries, loadCalendarEntries, loadTasks, normalizeTask, shiftDate, STORAGE_KEY, taskProgress, toDateKey, type CalendarEntry, type CalendarEntryType, type Task, type TaskPriority, type TaskStatus } from "./model";
 
 const today = toDateKey(new Date());
 const day = (offset: number) => shiftDate(today, offset);
@@ -237,7 +237,7 @@ function App() {
   };
 
   const exportTasks = () => {
-    const blob = new Blob([JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), tasks }, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify(createBackupPayload(tasks, calendarEntries), null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url; link.download = "task-management-backup.json"; link.click();
@@ -401,9 +401,7 @@ function CalendarManager({ entries, onSave, onDelete }: {
 
 function TaskEffortSummary({ task }: { task: Task }) {
   if (task.estimateHours === undefined && task.actualHours === undefined) return null;
-  const variance = task.estimateHours !== undefined && task.actualHours !== undefined
-    ? task.actualHours - task.estimateHours
-    : undefined;
+  const variance = effortVariance(task.estimateHours, task.actualHours);
   const varianceLabel = variance === undefined
     ? ""
     : variance > 0 ? ` · ${formatHours(variance)} over`
