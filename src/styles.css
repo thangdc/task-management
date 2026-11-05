@@ -51,3 +51,24 @@
 .calendar-footnote{grid-column:1/-1;font-size:10px;color:#999bad;margin:0}
 @media(max-width:900px){.calendar-manager{grid-template-columns:1fr}.calendar-footnote{grid-column:auto}}
 @media(max-width:560px){.calendar-form-panel,.calendar-list-panel{padding:15px}.calendar-entry-row{gap:8px}.calendar-entry-actions{gap:3px}.calendar-entry-actions .secondary-button{padding:6px 7px}}
+
+
+/* Timeline-first planning workspace */
+.timeline-workspace.page-content{max-width:none;width:100%;height:calc(100vh - 68px);min-height:480px;margin:0;padding:13px 18px 12px;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.timeline-workspace-header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex:0 0 auto;margin:0}
+.timeline-workspace-header .eyebrow{font-size:8px}
+.timeline-workspace-header h1{font-size:22px;letter-spacing:-.7px;margin:3px 0}
+.timeline-workspace-header p{font-size:10px;color:#9293a6;margin:0}
+.timeline-workspace .timeline-toolbar{flex:0 0 auto;margin:0}
+.timeline-workspace .gantt-panel{flex:1 1 auto;min-height:0;height:auto;display:flex;flex-direction:column;padding:11px 13px;overflow:hidden}
+.timeline-workspace .gantt-panel-heading{flex:0 0 auto;margin-bottom:8px;align-items:center}
+.timeline-workspace .gantt-panel-heading h2{font-size:12px;margin-bottom:3px}
+.timeline-workspace .gantt-panel-heading p{font-size:9px}
+.timeline-workspace .timeline-legend{font-size:8px;gap:4px}
+.timeline-workspace .timeline-legend i{margin-left:5px;width:6px;height:6px}
+.timeline-workspace .gantt-scroll{flex:1 1 auto;min-height:0;overflow:hidden;padding:0}
+.timeline-workspace .gantt-host{min-width:100%;height:100%}
+.timeline-workspace .timeline-note,.timeline-workspace .page-footer{display:none}
+.timeline-workspace .notice{flex:0 0 auto;margin:0}
+@media(max-width:820px){.timeline-workspace.page-content{padding:12px 12px 10px}.timeline-workspace-header h1{font-size:20px}.timeline-workspace .gantt-panel-heading{align-items:flex-start;flex-direction:column;gap:7px}}
+@media(max-width:560px){.timeline-workspace.page-content{height:calc(100vh - 58px);min-height:420px;padding:9px 8px;gap:8px}.timeline-workspace-header{align-items:flex-start}.timeline-workspace-header h1{font-size:18px}.timeline-workspace-header p{font-size:9px}.timeline-workspace-header .primary-button{padding:9px 11px;font-size:10px}.timeline-workspace .timeline-toolbar{align-items:center}.timeline-workspace .timeline-toolbar>div:first-child{font-size:9px}.timeline-workspace .view-switch button{padding:6px 8px;font-size:9px}.timeline-workspace .gantt-panel{padding:9px}.timeline-workspace .gantt-scroll{overflow:auto}.timeline-workspace .gantt-host{min-width:640px}}
