@@ -14,3 +14,8 @@
 .toolbar{flex-wrap:wrap}
 @media(max-width:1100px){.toolbar{align-items:stretch;flex-wrap:wrap;gap:10px}.task-filters{order:3;width:100%}.toolbar-count{margin-left:auto}}
 @media(max-width:680px){.task-filters{display:grid;grid-template-columns:1fr 1fr;gap:7px}.filter-control{justify-content:space-between;min-width:0}.filter-control select{max-width:110px;min-width:0}.filter-control:last-child{grid-column:1/-1}.toolbar-count{font-size:10px}}
+
+/* Task effort estimates and actuals */
+.effort-summary{display:block;margin-top:4px;color:#8274c8;font-size:9px;font-weight:600;line-height:1.4;white-space:normal}
+.effort-inputs{margin-top:2px}
+.effort-hint{margin:-5px 0 14px;color:#9a9bad;font-size:9px}
