@@ -27,6 +27,7 @@ declare module "frappe-gantt" {
 
   export interface FrappeGanttOptions {
     view_mode?: string;
+    container_height?: number | "auto";
     view_modes?: FrappeViewMode[];
     date_format?: string;
     language?: string;
