@@ -22,7 +22,7 @@ type View = "overview" | "timeline" | "tasks";
 const statusLabel: Record<TaskStatus, string> = { todo: "To do", "in-progress": "In progress", done: "Completed" };
 const priorityLabel: Record<TaskPriority, string> = { low: "Low", medium: "Medium", high: "High" };
 const shortDate = (date: string) => new Date(`${date}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-const formatHours = (hours: number) => `${Number.isInteger(hours) ? hours : hours.toFixed(2).replace(/0+$/, "").replace(/\\.$/, "")}h`;
+const formatHours = (hours: number) => `${Number.isInteger(hours) ? hours : hours.toFixed(2).replace(/0+$/, "").replace(/\.$/, "")}h`;
 const parseOptionalHours = (value: string): number | undefined => {
   if (!value.trim()) return undefined;
   const hours = Number(value);
