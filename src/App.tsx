@@ -147,6 +147,7 @@ function App() {
     let suppressNextClick = false;
 
     const onMouseDownCapture = (event: MouseEvent) => {
+      suppressNextClick = false;
       const target = event.target;
       if (target instanceof Element && target.closest(".bar-wrapper")) {
         dragStart = { x: event.clientX, y: event.clientY };
