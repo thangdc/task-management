@@ -25,6 +25,25 @@ describe("task normalization", () => {
     expect(task.dueDate).toBe("2026-10-18");
   });
 
+  it("preserves optional estimate and actual effort values", () => {
+    const task = normalizeTask({
+      id: "effort", title: "Estimate task", estimateHours: 2.5, actualHours: 3
+    }, "2026-11-05T08:00:00.000Z");
+    expect(task.estimateHours).toBe(2.5);
+    expect(task.actualHours).toBe(3);
+  });
+
+  it("keeps blank effort unset and removes invalid negative or non-finite values", () => {
+    const task = normalizeTask({
+      id: "effort-invalid", title: "Invalid effort", estimateHours: -1, actualHours: Number.NaN
+    }, "2026-11-05T08:00:00.000Z");
+    expect(task.estimateHours).toBeUndefined();
+    expect(task.actualHours).toBeUndefined();
+    const legacy = normalizeTask({ id: "legacy", title: "Old task" }, "2026-11-05T08:00:00.000Z");
+    expect(legacy.estimateHours).toBeUndefined();
+    expect(legacy.actualHours).toBeUndefined();
+  });
+
   it("forces completed tasks to 100 percent", () => {
     expect(taskProgress("done", 12)).toBe(100);
     expect(taskProgress("in-progress", -10)).toBe(0);

@@ -22,6 +22,12 @@ type View = "overview" | "timeline" | "tasks";
 const statusLabel: Record<TaskStatus, string> = { todo: "To do", "in-progress": "In progress", done: "Completed" };
 const priorityLabel: Record<TaskPriority, string> = { low: "Low", medium: "Medium", high: "High" };
 const shortDate = (date: string) => new Date(`${date}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+const formatHours = (hours: number) => `${Number.isInteger(hours) ? hours : hours.toFixed(2).replace(/0+$/, "").replace(/\.$/, "")}h`;
+const parseOptionalHours = (value: string): number | undefined => {
+  if (!value.trim()) return undefined;
+  const hours = Number(value);
+  return Number.isFinite(hours) && hours >= 0 ? hours : undefined;
+};
 
 function readInitialTasks(): Task[] {
   try {
@@ -203,12 +209,30 @@ function App() {
   );
 }
 
+function TaskEffortSummary({ task }: { task: Task }) {
+  if (task.estimateHours === undefined && task.actualHours === undefined) return null;
+  const variance = task.estimateHours !== undefined && task.actualHours !== undefined
+    ? task.actualHours - task.estimateHours
+    : undefined;
+  const varianceLabel = variance === undefined
+    ? ""
+    : variance > 0 ? ` · ${formatHours(variance)} over`
+      : variance < 0 ? ` · ${formatHours(Math.abs(variance))} under`
+        : " · on estimate";
+  return <span className="effort-summary">
+    {task.estimateHours !== undefined && `Est ${formatHours(task.estimateHours)}`}
+    {task.estimateHours !== undefined && task.actualHours !== undefined && " · "}
+    {task.actualHours !== undefined && `Actual ${formatHours(task.actualHours)}`}
+    {varianceLabel}
+  </span>;
+}
+
 function TaskRow({ task, onToggle, onOpen }: { task: Task; onToggle: () => void; onOpen: () => void }) {
-  return <article className="task-row"><button className={task.status === "done" ? "task-check checked" : "task-check"} aria-label={task.status === "done" ? `Reopen ${task.title}` : `Complete ${task.title}`} onClick={onToggle}>{task.status === "done" && <Check size={13} />}</button><button className="task-title-button" onClick={onOpen}><strong className={task.status === "done" ? "completed-title" : ""}>{task.title}</strong><small>{task.notes || "No notes yet"}</small></button><span className={`priority-tag priority-${task.priority}`}><i />{priorityLabel[task.priority]}</span><span className="due-date"><CalendarDays size={14} />{shortDate(task.dueDate)}</span></article>;
+  return <article className="task-row"><button className={task.status === "done" ? "task-check checked" : "task-check"} aria-label={task.status === "done" ? `Reopen ${task.title}` : `Complete ${task.title}`} onClick={onToggle}>{task.status === "done" && <Check size={13} />}</button><button className="task-title-button" onClick={onOpen}><strong className={task.status === "done" ? "completed-title" : ""}>{task.title}</strong><small>{task.notes || "No notes yet"}</small><TaskEffortSummary task={task} /></button><span className={`priority-tag priority-${task.priority}`}><i />{priorityLabel[task.priority]}</span><span className="due-date"><CalendarDays size={14} />{shortDate(task.dueDate)}</span></article>;
 }
 
 function TaskTableRow({ task, onOpen, onToggle, onDelete }: { task: Task; onOpen: () => void; onToggle: () => void; onDelete: () => void }) {
-  return <div className="task-table-row"><div className="table-task-cell"><button className={task.status === "done" ? "task-check checked" : "task-check"} aria-label={task.status === "done" ? `Reopen ${task.title}` : `Complete ${task.title}`} onClick={onToggle}>{task.status === "done" && <Check size={13} />}</button><button className="table-task-title" onClick={onOpen}><strong>{task.title}</strong><small>{task.notes || "No notes yet"}</small></button></div><span className={`priority-tag priority-${task.priority}`}><i />{priorityLabel[task.priority]}</span><span className="table-due">{shortDate(task.dueDate)}</span><span className={`status-tag status-${task.status}`}>{statusLabel[task.status]}</span><button className="row-delete" aria-label={`Delete ${task.title}`} onClick={onDelete}><Trash2 size={15} /></button></div>;
+  return <div className="task-table-row"><div className="table-task-cell"><button className={task.status === "done" ? "task-check checked" : "task-check"} aria-label={task.status === "done" ? `Reopen ${task.title}` : `Complete ${task.title}`} onClick={onToggle}>{task.status === "done" && <Check size={13} />}</button><button className="table-task-title" onClick={onOpen}><strong>{task.title}</strong><small>{task.notes || "No notes yet"}</small><TaskEffortSummary task={task} /></button></div><span className={`priority-tag priority-${task.priority}`}><i />{priorityLabel[task.priority]}</span><span className="table-due">{shortDate(task.dueDate)}</span><span className={`status-tag status-${task.status}`}>{statusLabel[task.status]}</span><button className="row-delete" aria-label={`Delete ${task.title}`} onClick={onDelete}><Trash2 size={15} /></button></div>;
 }
 
 function EmptyState({ onAdd }: { onAdd: () => void }) {
@@ -222,7 +246,9 @@ function TaskEditor({ task, onClose, onSave }: { task: Task; onClose: () => void
   const [priority, setPriority] = useState<TaskPriority>(task.priority);
   const [startDate, setStartDate] = useState(task.startDate);
   const [dueDate, setDueDate] = useState(task.dueDate);
-  return <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}><form className="task-editor" onSubmit={event => { event.preventDefault(); if (!title.trim()) return; onSave({ title: title.trim(), notes, status, priority, startDate, dueDate: dueDate < startDate ? startDate : dueDate, progress: status === "done" ? 100 : task.progress }); }}><header><div><span className="editor-eyebrow">TASK DETAILS</span><h2>Edit task</h2></div><button className="icon-button" type="button" aria-label="Close editor" onClick={onClose}><X size={18} /></button></header><label>Task name<input required autoFocus value={title} onChange={event => setTitle(event.target.value)} /></label><label>Notes<textarea rows={3} value={notes} onChange={event => setNotes(event.target.value)} placeholder="Add context or a next step..." /></label><div className="editor-two-col"><label>Start date<input type="date" value={startDate} onChange={event => setStartDate(event.target.value)} required /></label><label>Due date<input type="date" min={startDate} value={dueDate} onChange={event => setDueDate(event.target.value)} required /></label></div><div className="editor-two-col"><label>Priority<select value={priority} onChange={event => setPriority(event.target.value as TaskPriority)}><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label><label>Status<select value={status} onChange={event => setStatus(event.target.value as TaskStatus)}><option value="todo">To do</option><option value="in-progress">In progress</option><option value="done">Completed</option></select></label></div><footer><button type="button" className="secondary-button" onClick={onClose}>Cancel</button><button type="submit" className="primary-button"><Check size={16} /> Save changes</button></footer></form></div>;
+  const [estimateHours, setEstimateHours] = useState(task.estimateHours === undefined ? "" : String(task.estimateHours));
+  const [actualHours, setActualHours] = useState(task.actualHours === undefined ? "" : String(task.actualHours));
+  return <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}><form className="task-editor" onSubmit={event => { event.preventDefault(); if (!title.trim()) return; onSave({ title: title.trim(), notes, status, priority, startDate, dueDate: dueDate < startDate ? startDate : dueDate, progress: status === "done" ? 100 : task.progress, estimateHours: parseOptionalHours(estimateHours), actualHours: parseOptionalHours(actualHours) }); }}><header><div><span className="editor-eyebrow">TASK DETAILS</span><h2>Edit task</h2></div><button className="icon-button" type="button" aria-label="Close editor" onClick={onClose}><X size={18} /></button></header><label>Task name<input required autoFocus value={title} onChange={event => setTitle(event.target.value)} /></label><label>Notes<textarea rows={3} value={notes} onChange={event => setNotes(event.target.value)} placeholder="Add context or a next step..." /></label><div className="editor-two-col"><label>Start date<input type="date" value={startDate} onChange={event => setStartDate(event.target.value)} required /></label><label>Due date<input type="date" min={startDate} value={dueDate} onChange={event => setDueDate(event.target.value)} required /></label></div><div className="editor-two-col"><label>Priority<select value={priority} onChange={event => setPriority(event.target.value as TaskPriority)}><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label><label>Status<select value={status} onChange={event => setStatus(event.target.value as TaskStatus)}><option value="todo">To do</option><option value="in-progress">In progress</option><option value="done">Completed</option></select></label></div><div className="editor-two-col effort-inputs"><label>Estimate (hours)<input type="number" min="0" step="0.25" value={estimateHours} onChange={event => setEstimateHours(event.target.value)} placeholder="Not estimated" /></label><label>Actual (hours)<input type="number" min="0" step="0.25" value={actualHours} onChange={event => setActualHours(event.target.value)} placeholder="Not recorded" /></label></div><p className="effort-hint">Enter decimal hours. Leave blank when effort is not known.</p><footer><button type="button" className="secondary-button" onClick={onClose}>Cancel</button><button type="submit" className="primary-button"><Check size={16} /> Save changes</button></footer></form></div>;
 }
 
 export default App;
