@@ -10,6 +10,8 @@ export interface Task {
   startDate: string;
   dueDate: string;
   progress: number;
+  estimateHours?: number;
+  actualHours?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -30,6 +32,12 @@ export function shiftDate(dateKey: string, days: number): string {
   return toDateKey(date);
 }
 
+function normalizeOptionalHours(value: unknown): number | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+  const hours = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(hours) && hours >= 0 ? hours : undefined;
+}
+
 export function normalizeTask(task: Partial<Task> & Pick<Task, "id" | "title">, now = new Date().toISOString()): Task {
   const today = toDateKey(new Date(now));
   const startDate = isDateKey(task.startDate) ? task.startDate : today;
@@ -45,6 +53,8 @@ export function normalizeTask(task: Partial<Task> & Pick<Task, "id" | "title">, 
     startDate,
     dueDate,
     progress: status === "done" ? 100 : progress,
+    estimateHours: normalizeOptionalHours(task.estimateHours),
+    actualHours: normalizeOptionalHours(task.actualHours),
     createdAt: task.createdAt ?? now,
     updatedAt: task.updatedAt ?? now
   };
