@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isDateKey, loadCalendarEntries, loadTasks, normalizeCalendarEntry, normalizeTask, shiftDate, taskProgress } from "./model";
+import { expandCalendarEntries, isDateKey, loadCalendarEntries, loadTasks, normalizeCalendarEntry, normalizeTask, shiftDate, taskProgress } from "./model";
 
 describe("date-only helpers", () => {
   it("validates real calendar dates", () => {
@@ -86,5 +86,22 @@ describe("working calendar entries", () => {
     ]);
     expect(loadCalendarEntries(overlapping)).toHaveLength(2);
     expect(loadCalendarEntries("{broken")).toEqual([]);
+  });
+});
+
+
+describe("Gantt calendar markers", () => {
+  it("expands inclusive holiday and leave ranges into labeled daily markers", () => {
+    const markers = expandCalendarEntries([
+      { id: "h1", name: "Public holiday", startDate: "2026-12-25", endDate: "2026-12-26", type: "holiday" },
+      { id: "l1", name: "Annual leave", startDate: "2026-12-26", endDate: "2026-12-28", type: "leave" }
+    ]);
+    expect(markers.holiday).toEqual([
+      { date: "2026-12-25", label: "Public holiday" },
+      { date: "2026-12-26", label: "Public holiday" }
+    ]);
+    expect(markers.leave).toHaveLength(3);
+    expect(markers.leave[0].date).toBe("2026-12-26");
+    expect(markers.other).toEqual([]);
   });
 });
