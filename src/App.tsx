@@ -145,7 +145,7 @@ function App() {
     try {
       new Gantt(host, rows, {
         view_mode: timelineMode,
-        view_modes: ganttViewModes,
+        view_modes: [ganttViewModes.find(mode => mode.name === timelineMode)!, ...ganttViewModes.filter(mode => mode.name !== timelineMode)],
         date_format: "YYYY-MM-DD",
         language: "en",
         holidays: {
