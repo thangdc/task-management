@@ -125,3 +125,23 @@ export function loadCalendarEntries(raw: string | null): CalendarEntry[] {
     return [];
   }
 }
+
+
+export interface CalendarMarker {
+  date: string;
+  name: string;
+}
+
+export function expandCalendarEntries(entries: CalendarEntry[]): Record<CalendarEntryType, CalendarMarker[]> {
+  const markers: Record<CalendarEntryType, CalendarMarker[]> = {
+    holiday: [],
+    leave: [],
+    other: []
+  };
+  for (const entry of entries) {
+    for (let date = entry.startDate; date <= entry.endDate; date = shiftDate(date, 1)) {
+      markers[entry.type].push({ date, name: entry.name });
+    }
+  }
+  return markers;
+}

@@ -52,3 +52,13 @@
   .grid-column { fill:transparent; pointer-events:all; }
   .grid-column:hover { fill:var(--g-weekend-highlight-color); transition:fill .1s ease; }
 }
+
+/* Calendar exceptions are highlighted separately from weekend columns. */
+.gantt-container .holiday-highlight{cursor:help}
+.gantt-container .holiday-label{font-size:10px;line-height:1.2;color:#46465b;white-space:nowrap;box-shadow:0 1px 4px #2222;pointer-events:none}
+.gantt-container .holiday-label.show{opacity:1}
+.timeline-legend .legend-weekend{background:#dcdbe5}
+.timeline-legend .legend-holiday{background:#f0b88e}
+.timeline-legend .legend-leave{background:#b6a9f1}
+
+.timeline-legend .legend-other{background:#9cc9b2}
