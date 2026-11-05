@@ -5,8 +5,8 @@ import {
   Sparkles, Target, Trash2, TrendingUp, X
 } from "lucide-react";
 import Gantt from "frappe-gantt";
-import type { FrappeTask } from "frappe-gantt";
-import { CALENDAR_STORAGE_KEY, loadCalendarEntries, loadTasks, normalizeTask, shiftDate, STORAGE_KEY, taskProgress, toDateKey, type CalendarEntry, type CalendarEntryType, type Task, type TaskPriority, type TaskStatus } from "./model";
+import type { FrappeTask, FrappeViewMode } from "frappe-gantt";
+import { CALENDAR_STORAGE_KEY, expandCalendarEntries, loadCalendarEntries, loadTasks, normalizeTask, shiftDate, STORAGE_KEY, taskProgress, toDateKey, type CalendarEntry, type CalendarEntryType, type Task, type TaskPriority, type TaskStatus } from "./model";
 
 const today = toDateKey(new Date());
 const day = (offset: number) => shiftDate(today, offset);
@@ -22,6 +22,45 @@ type View = "overview" | "timeline" | "tasks" | "calendar";
 const statusLabel: Record<TaskStatus, string> = { todo: "To do", "in-progress": "In progress", done: "Completed" };
 const priorityLabel: Record<TaskPriority, string> = { low: "Low", medium: "Medium", high: "High" };
 const shortDate = (date: string) => new Date(`${date}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+const weekdayDateLabel = (date: Date) => `${date.toLocaleDateString("en-US", { weekday: "short" })} ${date.getDate()}`;
+const monthHeaderLabel = (date: Date, previousDate: Date | null) =>
+  !previousDate || date.getMonth() !== previousDate.getMonth() || date.getFullYear() !== previousDate.getFullYear()
+    ? date.toLocaleDateString("en-US", { month: "long", year: "numeric" })
+    : "";
+const ganttViewModes: FrappeViewMode[] = [
+  {
+    name: "Day",
+    padding: "7d",
+    step: "1d",
+    date_format: "YYYY-MM-DD",
+    column_width: 76,
+    lower_text: date => weekdayDateLabel(date),
+    upper_text: monthHeaderLabel,
+    thick_line: date => date.getDay() === 1
+  },
+  {
+    name: "Week",
+    padding: "1m",
+    step: "1d",
+    date_format: "YYYY-MM-DD",
+    column_width: 52,
+    lower_text: date => weekdayDateLabel(date),
+    upper_text: monthHeaderLabel,
+    thick_line: date => date.getDay() === 1
+  },
+  {
+    name: "Month",
+    padding: "2m",
+    step: "1m",
+    date_format: "YYYY-MM",
+    column_width: 112,
+    lower_text: date => date.toLocaleDateString("en-US", { month: "short" }),
+    upper_text: (date, previousDate) =>
+      !previousDate || date.getFullYear() !== previousDate.getFullYear() ? String(date.getFullYear()) : "",
+    thick_line: date => date.getMonth() % 3 === 0,
+    snap_at: "7d"
+  }
+];
 const formatHours = (hours: number) => `${Number.isInteger(hours) ? hours : hours.toFixed(2).replace(/0+$/, "").replace(/\.$/, "")}h`;
 const parseOptionalHours = (value: string): number | undefined => {
   if (!value.trim()) return undefined;
@@ -77,6 +116,7 @@ function App() {
           ? b.updatedAt.localeCompare(a.updatedAt)
           : a.dueDate.localeCompare(b.dueDate));
   }, [tasks, query, statusFilter, priorityFilter, sortBy]);
+  const calendarMarkers = useMemo(() => expandCalendarEntries(calendarEntries), [calendarEntries]);
   const activeTasks = tasks.filter(task => task.status !== "done");
   const dueToday = activeTasks.filter(task => task.dueDate <= today);
   const completed = tasks.filter(task => task.status === "done").length;
@@ -105,8 +145,15 @@ function App() {
     try {
       new Gantt(host, rows, {
         view_mode: timelineMode,
+        view_modes: ganttViewModes,
         date_format: "YYYY-MM-DD",
         language: "en",
+        holidays: {
+          "var(--g-weekend-highlight-color)": "weekend",
+          "var(--g-holiday-highlight-color)": calendarMarkers.holiday,
+          "var(--g-leave-highlight-color)": calendarMarkers.leave,
+          "var(--g-other-highlight-color)": calendarMarkers.other
+        },
         on_click: (row) => {
           const task = tasks.find(item => item.id === row.id);
           if (task) setSelectedTask(task);
@@ -119,7 +166,7 @@ function App() {
     } catch {
       setNotice("The timeline could not be rendered. Your task data is still safe.");
     }
-  }, [view, filtered, timelineMode]);
+  }, [view, filtered, timelineMode, calendarMarkers]);
 
   const addTask = () => {
     const title = draftTitle.trim();
@@ -215,7 +262,7 @@ function App() {
 
           {view === "calendar" && <CalendarManager entries={calendarEntries} onSave={entry => { saveCalendarEntry(entry); setNotice("Calendar entry saved"); }} onDelete={deleteCalendarEntry} />}
 
-          {view === "timeline" && <><div className="timeline-toolbar"><div><span className="timeline-live-dot" /> <strong>Live plan</strong><span className="timeline-count">{filtered.length} tasks on timeline</span></div><div className="view-switch" aria-label="Timeline scale">{["Day", "Week", "Month"].map(mode => <button key={mode} className={timelineMode === mode ? "selected" : ""} onClick={() => setTimelineMode(mode)}>{mode}</button>)}</div></div><section className="gantt-panel"><div className="gantt-panel-heading"><div><h2>Work timeline</h2><p>Drag a task bar to adjust dates, or drag its end to change duration.</p></div><span className="timeline-legend"><i className="legend-purple" /> High priority <i className="legend-blue" /> Planned</span></div>{filtered.length ? <div className="gantt-scroll"><div ref={ganttHost} className="gantt-host" /></div> : <EmptyState onAdd={() => setShowComposer(true)} />}</section><p className="timeline-note"><Sparkles size={15} /> Changes made on the timeline are saved locally as you work.</p></>}
+          {view === "timeline" && <><div className="timeline-toolbar"><div><span className="timeline-live-dot" /> <strong>Live plan</strong><span className="timeline-count">{filtered.length} tasks on timeline</span></div><div className="view-switch" aria-label="Timeline scale">{["Day", "Week", "Month"].map(mode => <button key={mode} className={timelineMode === mode ? "selected" : ""} onClick={() => setTimelineMode(mode)}>{mode}</button>)}</div></div><section className="gantt-panel"><div className="gantt-panel-heading"><div><h2>Work timeline</h2><p>Drag a task bar to adjust dates, or drag its end to change duration.</p></div><span className="timeline-legend"><i className="legend-purple" /> High priority <i className="legend-blue" /> Planned <i className="legend-weekend" /> Weekend <i className="legend-holiday" /> Holiday <i className="legend-leave" /> Leave</span></div>{filtered.length ? <div className="gantt-scroll"><div ref={ganttHost} className="gantt-host" /></div> : <EmptyState onAdd={() => setShowComposer(true)} />}</section><p className="timeline-note"><Sparkles size={15} /> Changes made on the timeline are saved locally as you work.</p></>}
 
           <footer className="page-footer"><span>© 2026 Taskflow <span className="footer-separator">·</span> Built for focused work</span><span><span className="footer-status" /> Your changes are saved in this browser</span></footer>
         </div>
