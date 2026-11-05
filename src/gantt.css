@@ -62,3 +62,9 @@
 .timeline-legend .legend-leave{background:#b6a9f1}
 
 .timeline-legend .legend-other{background:#9cc9b2}
+
+/* Clear drag affordance and larger invisible resize hit targets. */
+.gantt .bar-wrapper{cursor:grab}
+.gantt .bar-wrapper:active{cursor:grabbing}
+.gantt .handle.left,.gantt .handle.right{stroke:transparent;stroke-width:12px;pointer-events:stroke}
+.gantt .handle.progress{stroke:transparent;stroke-width:9px;pointer-events:stroke}
