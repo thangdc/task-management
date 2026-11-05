@@ -10,8 +10,8 @@ A polished, visual-first personal task manager that is useful without an account
 
 - [x] PR01 — discovery and architecture proposal.
 - [x] PR02 — runnable app shell, visual dashboard, interactive Gantt timeline, CI, and deployed testing preview.
-- [ ] PR03 — task-management interactions: filters/sorting are in place; finish CRUD edge cases, dependency handling, useful Gantt interactions, and related tests.
-- [ ] PR04 — resilient local-first persistence, import/export recovery, empty/error states, responsive layout, accessibility, and regression tests.
+- [ ] PR03 — task-management interactions: filters/sorting, effort fields, working calendar, weekday/weekend rendering, timeline-first layout and Gantt drag fix are implemented; live drag/resize verification and remaining CRUD/dependency edge cases are still open.
+- [ ] PR04 — resilient local-first persistence, complete workspace backup export (tasks + calendar), import recovery, empty/error states, responsive layout, accessibility, and regression tests.
 - [ ] PR05 — optional Supabase authentication/schema/RLS/cloud sync. Blocked until required Supabase project configuration and credentials are explicitly provided; do not invent or expose credentials.
 - [ ] PR06 — broader regression coverage, browser-level smoke tests where feasible, performance/security review, and documentation.
 - [ ] PR07 — release readiness, known limitations, and final verification of the testing URL.
@@ -26,9 +26,9 @@ A polished, visual-first personal task manager that is useful without an account
 - Never commit secrets, enable cloud sync without validated Supabase configuration/RLS, or silently change the product's architecture.
 - Do not mark a milestone complete until all its acceptance criteria are implemented and verified. PR03 is still in progress; adding filters/sorting alone does not complete it.
 
-## Autonomous run policy
+## Manual run policy
 
-Each scheduled run should deliver at most one coherent implementation slice:
+Each manually triggered agent run should deliver at most one coherent implementation slice. Scheduled roadmap delivery is disabled; run the workflow manually only when requested.
 1. Inspect this roadmap, the current automation PR (if any), and the latest verification state.
 2. Fix an outstanding failed check/preview first; otherwise implement the highest-priority unfinished milestone.
 3. Run typecheck, unit tests, and production build; fix failures before proposing changes.
