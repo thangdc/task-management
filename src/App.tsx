@@ -191,8 +191,6 @@ function App() {
         view_modes: [ganttViewModes.find(mode => mode.name === timelineMode)!, ...ganttViewModes.filter(mode => mode.name !== timelineMode)],
         date_format: "YYYY-MM-DD",
         language: "en",
-        // Keep the full historical schedule in view instead of centering on today.
-        scroll_to: "start",
         // Compress weekends and configured days off out of the working-time axis.
         ignore: [
           "weekend",
