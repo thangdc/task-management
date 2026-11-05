@@ -12,6 +12,9 @@ async function readTask(page: Page, id: string) {
 async function dragLocator(page: Page, selector: string, deltaX: number) {
   const target = page.locator(selector).first();
   await expect(target).toBeVisible();
+  // Gantt can place tasks beyond the initial horizontal viewport. Scroll the
+  // actual SVG target into the scroll container before using viewport mouse coordinates.
+  await target.scrollIntoViewIfNeeded();
   const bounds = await target.boundingBox();
   expect(bounds).not.toBeNull();
   if (!bounds) throw new Error(`No bounding box for ${selector}`);
@@ -59,6 +62,8 @@ test("resizing the left and right handles changes the matching date boundaries",
 });
 
 test("a normal click on a task bar still opens its editor", async ({ page }) => {
-  await page.locator('.bar-wrapper[data-id="task-2"] .bar').click({ position: { x: 8, y: 15 } });
+  const barProgress = page.locator('.bar-wrapper[data-id="task-2"] .bar-progress');
+  await barProgress.scrollIntoViewIfNeeded();
+  await barProgress.click({ position: { x: 8, y: 15 } });
   await expect(page.locator(".task-editor")).toBeVisible();
 });
