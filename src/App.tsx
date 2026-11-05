@@ -324,7 +324,7 @@ function App() {
 
           {view === "timeline" && <><div className="timeline-toolbar"><div><span className="timeline-live-dot" /> <strong>Live plan</strong><span className="timeline-count">{filtered.length} tasks on timeline</span></div><div className="view-switch" aria-label="Timeline scale">{["Day", "Week", "Month"].map(mode => <button key={mode} className={timelineMode === mode ? "selected" : ""} onClick={() => setTimelineMode(mode)}>{mode}</button>)}</div></div><section className="gantt-panel"><div className="gantt-panel-heading"><div><h2>Schedule</h2><p>Drag a task to move it; use the ends to change its duration.</p></div><span className="timeline-legend"><i className="legend-purple" /> High priority <i className="legend-blue" /> Planned <i className="legend-weekend" /> Weekend <i className="legend-holiday" /> Holiday <i className="legend-leave" /> Leave <i className="legend-other" /> Other</span></div>{filtered.length ? <div className="gantt-scroll"><div ref={ganttHost} className="gantt-host" /></div> : <EmptyState onAdd={() => setShowComposer(true)} />}</section><p className="timeline-note"><Sparkles size={15} /> Changes made on the timeline are saved locally as you work.</p></>}
 
-          {view !== "timeline" && <footer className="page-footer"><span>© 2026 Taskflow <span className="footer-separator">·</span> Built for focused work</span><span><span className="footer-status" /> Your changes are saved in this browser</span></footer>
+          {view !== "timeline" && <footer className="page-footer"><span>© 2026 Taskflow <span className="footer-separator">·</span> Built for focused work</span><span><span className="footer-status" /> Your changes are saved in this browser</span></footer>}
         </div>
       </main>
 
