@@ -156,3 +156,30 @@ describe("working-time calculations", () => {
     expect(taskProgressFromEffort("in-progress", 0, 5, 10)).toBe(100);
   });
 });
+
+
+describe("working-time calculations", () => {
+  it("uses 8-hour weekdays and excludes weekends and configured days off", () => {
+    const daysOff = [
+      { id: "holiday", name: "Holiday", startDate: "2026-11-06", endDate: "2026-11-06", type: "holiday" as const },
+      { id: "leave", name: "Leave", startDate: "2026-11-09", endDate: "2026-11-09", type: "leave" as const },
+      { id: "other", name: "Company day off", startDate: "2026-11-10", endDate: "2026-11-10", type: "other" as const }
+    ];
+    // Thu 5 Nov and Wed 11 Nov are the only working days in this range.
+    expect(calculateWorkingHours("2026-11-05", "2026-11-11", daysOff)).toBe(16);
+  });
+
+  it("returns zero for invalid or reversed date ranges", () => {
+    expect(calculateWorkingHours("2026-02-30", "2026-03-01")).toBe(0);
+    expect(calculateWorkingHours("2026-11-10", "2026-11-09")).toBe(0);
+  });
+
+  it("derives progress from actual divided by estimate and preserves manual fallback", () => {
+    expect(taskProgressFromEffort("in-progress", 0, 5, 3)).toBe(60);
+    expect(taskProgressFromEffort("in-progress", 0, 5, 0)).toBe(0);
+    expect(taskProgressFromEffort("in-progress", 37, undefined, 3)).toBe(37);
+    expect(taskProgressFromEffort("done", 20, 5, 3)).toBe(100);
+    expect(taskProgressFromEffort("in-progress", 0, 0, 3)).toBe(0);
+    expect(taskProgressFromEffort("in-progress", 0, 5, 10)).toBe(100);
+  });
+});
