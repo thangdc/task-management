@@ -97,8 +97,8 @@ describe("Gantt calendar markers", () => {
       { id: "l1", name: "Annual leave", startDate: "2026-12-26", endDate: "2026-12-28", type: "leave" }
     ]);
     expect(markers.holiday).toEqual([
-      { date: "2026-12-25", label: "Public holiday" },
-      { date: "2026-12-26", label: "Public holiday" }
+      { date: "2026-12-25", name: "Public holiday" },
+      { date: "2026-12-26", name: "Public holiday" }
     ]);
     expect(markers.leave).toHaveLength(3);
     expect(markers.leave[0].date).toBe("2026-12-26");
