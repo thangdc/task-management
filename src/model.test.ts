@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { expandCalendarEntries, isDateKey, loadCalendarEntries, loadTasks, normalizeCalendarEntry, normalizeTask, shiftDate, taskProgress } from "./model";
+import { createBackupPayload, effortVariance, expandCalendarEntries, isDateKey, loadCalendarEntries, loadTasks, normalizeCalendarEntry, normalizeTask, shiftDate, taskProgress } from "./model";
 
 describe("date-only helpers", () => {
   it("validates real calendar dates", () => {
@@ -39,6 +39,8 @@ describe("task normalization", () => {
     }, "2026-11-05T08:00:00.000Z");
     expect(task.estimateHours).toBeUndefined();
     expect(task.actualHours).toBeUndefined();
+    const blank = normalizeTask({ id: "blank-effort", title: "Blank", estimateHours: "  " as unknown as number }, "2026-11-05T08:00:00.000Z");
+    expect(blank.estimateHours).toBeUndefined();
     const legacy = normalizeTask({ id: "legacy", title: "Old task" }, "2026-11-05T08:00:00.000Z");
     expect(legacy.estimateHours).toBeUndefined();
     expect(legacy.actualHours).toBeUndefined();
@@ -103,5 +105,27 @@ describe("Gantt calendar markers", () => {
     expect(markers.leave).toHaveLength(3);
     expect(markers.leave[0].date).toBe("2026-12-26");
     expect(markers.other).toEqual([]);
+  });
+});
+
+
+describe("effort variance and workspace backup", () => {
+  it("calculates actual minus estimate only when both values are present and valid", () => {
+    expect(effortVariance(8, 10)).toBe(2);
+    expect(effortVariance(8, 6)).toBe(-2);
+    expect(effortVariance(8, 8)).toBe(0);
+    expect(effortVariance(8, undefined)).toBeUndefined();
+    expect(effortVariance(-1, 2)).toBeUndefined();
+  });
+
+  it("exports tasks and calendar entries together in a versioned backup", () => {
+    const task = normalizeTask({ id: "t1", title: "Task", estimateHours: 4, actualHours: 3 });
+    const calendarEntry = { id: "h1", name: "Holiday", startDate: "2026-12-25", endDate: "2026-12-25", type: "holiday" as const };
+    expect(createBackupPayload([task], [calendarEntry], "2026-11-05T00:00:00.000Z")).toEqual({
+      version: 2,
+      exportedAt: "2026-11-05T00:00:00.000Z",
+      tasks: [task],
+      calendarEntries: [calendarEntry]
+    });
   });
 });
