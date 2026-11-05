@@ -5,6 +5,7 @@ import {
   Sparkles, Target, Trash2, TrendingUp, X
 } from "lucide-react";
 import Gantt from "frappe-gantt";
+import { isGanttDragGesture, type GanttPointerPoint } from "./gantt-interactions";
 import type { FrappeTask, FrappeViewMode } from "frappe-gantt";
 import { CALENDAR_STORAGE_KEY, expandCalendarEntries, loadCalendarEntries, loadTasks, normalizeTask, shiftDate, STORAGE_KEY, taskProgress, toDateKey, type CalendarEntry, type CalendarEntryType, type Task, type TaskPriority, type TaskStatus } from "./model";
 
@@ -137,6 +138,46 @@ function App() {
     const host = ganttHost.current;
     host.replaceChildren();
     if (!filtered.length) return;
+
+    // Frappe Gantt emits date_change during mousemove. Keep those updates
+    // local to the chart until mouseup so React does not recreate the SVG
+    // while the user is still dragging or resizing a bar.
+    let pendingDateChange: { id: string; startDate: string; dueDate: string } | null = null;
+    let dragStart: GanttPointerPoint | null = null;
+    let suppressNextClick = false;
+
+    const onMouseDownCapture = (event: MouseEvent) => {
+      const target = event.target;
+      if (target instanceof Element && target.closest(".bar-wrapper")) {
+        dragStart = { x: event.clientX, y: event.clientY };
+        suppressNextClick = false;
+      } else {
+        dragStart = null;
+      }
+    };
+    const onMouseUpCapture = (event: MouseEvent) => {
+      if (isGanttDragGesture(dragStart, { x: event.clientX, y: event.clientY })) {
+        suppressNextClick = true;
+      }
+      dragStart = null;
+    };
+    const onClickCapture = (event: MouseEvent) => {
+      if (!suppressNextClick) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      suppressNextClick = false;
+    };
+    const flushPendingDateChange = () => {
+      if (!pendingDateChange) return;
+      const change = pendingDateChange;
+      pendingDateChange = null;
+      updateTask(change.id, { startDate: change.startDate, dueDate: change.dueDate });
+    };
+
+    host.addEventListener("mousedown", onMouseDownCapture, true);
+    host.addEventListener("mouseup", onMouseUpCapture, true);
+    host.addEventListener("click", onClickCapture, true);
+
     const rows: FrappeTask[] = filtered.map(task => ({
       id: task.id, name: task.title, start: task.startDate, end: task.dueDate,
       progress: taskProgress(task.status, task.progress),
@@ -159,13 +200,27 @@ function App() {
           if (task) setSelectedTask(task);
         },
         on_date_change: (row, start, end) => {
-          updateTask(row.id, { startDate: toDateKey(start), dueDate: toDateKey(end) });
+          pendingDateChange = {
+            id: row.id,
+            startDate: toDateKey(start),
+            dueDate: toDateKey(end)
+          };
         },
         on_progress_change: (row, progress) => updateTask(row.id, { progress: taskProgress("in-progress", progress), status: progress >= 100 ? "done" : "in-progress" })
       });
+      // Register after Frappe Gantt so its own mouseup handler runs first.
+      document.addEventListener("mouseup", flushPendingDateChange);
     } catch {
       setNotice("The timeline could not be rendered. Your task data is still safe.");
     }
+
+    return () => {
+      host.removeEventListener("mousedown", onMouseDownCapture, true);
+      host.removeEventListener("mouseup", onMouseUpCapture, true);
+      host.removeEventListener("click", onClickCapture, true);
+      document.removeEventListener("mouseup", flushPendingDateChange);
+      flushPendingDateChange();
+    };
   }, [view, filtered, timelineMode, calendarMarkers]);
 
   const addTask = () => {
