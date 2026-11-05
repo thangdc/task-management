@@ -80,6 +80,11 @@ describe("working calendar entries", () => {
       { id: "bad", name: "Broken", startDate: "2026-02-30", endDate: "2026-03-01", type: "holiday" }
     ]);
     expect(loadCalendarEntries(raw)).toHaveLength(1);
+    const overlapping = JSON.stringify([
+      { id: "holiday", name: "Public holiday", startDate: "2026-12-25", endDate: "2026-12-26", type: "holiday" },
+      { id: "leave", name: "Personal leave", startDate: "2026-12-26", endDate: "2026-12-28", type: "leave" }
+    ]);
+    expect(loadCalendarEntries(overlapping)).toHaveLength(2);
     expect(loadCalendarEntries("{broken")).toEqual([]);
   });
 });
