@@ -138,3 +138,16 @@ Each implementation issue becomes a focused PR targeting `develop`. Do not merge
 - Prefer small PRs with explicit acceptance criteria and focused tests.
 - Never overwrite a user's local task data during schema migration.
 - Do not mark the initiative complete based on unit tests alone; the Gantt interactions require a real browser smoke test.
+
+
+## 8. Delivery status (updated 2026-11-05)
+
+- [x] Design review and delivery plan — PR #13 merged.
+- [x] PR-A estimate/actual effort — PR #21 merged; CI and preview deployment passed.
+- [x] PR-B working calendar and holiday management — PR #22 merged; CI, preview deployment and create/edit/delete smoke test passed.
+- [x] PR-C weekday/weekend and holiday rendering — PR #23 merged; CI and preview deployment passed.
+- [x] PR-D drag/resize stability fix — PR #24 merged; CI and preview deployment passed. Live browser drag/resize acceptance is still pending, so issue #18 remains open.
+- [x] PR-E timeline-first workspace — PR #25 merged; CI and preview deployment passed.
+- [ ] PR-F combined regression and release verification — in progress.
+
+The drag fix addresses two verified source-level causes in Frappe Gantt 1.0.4: date-change callbacks fire during mousemove (which previously caused React to recreate the chart mid-gesture), and the click callback fires after a drag. The implementation buffers date changes until mouseup and suppresses the click following a drag. This is not considered fully verified until a live browser test confirms move, resize, click, and refresh persistence.
