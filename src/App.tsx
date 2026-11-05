@@ -7,7 +7,7 @@ import {
 import Gantt from "frappe-gantt";
 import { isGanttDragGesture, type GanttPointerPoint } from "./gantt-interactions";
 import type { FrappeTask, FrappeViewMode } from "frappe-gantt";
-import { CALENDAR_STORAGE_KEY, createBackupPayload, effortVariance, expandCalendarEntries, loadCalendarEntries, loadTasks, normalizeTask, shiftDate, STORAGE_KEY, taskProgress, toDateKey, type CalendarEntry, type CalendarEntryType, type Task, type TaskPriority, type TaskStatus } from "./model";
+import { CALENDAR_STORAGE_KEY, calculateWorkingHours, createBackupPayload, effortVariance, expandCalendarEntries, loadCalendarEntries, loadTasks, normalizeTask, shiftDate, STORAGE_KEY, taskProgress, taskProgressFromEffort, toDateKey, type CalendarEntry, type CalendarEntryType, type Task, type TaskPriority, type TaskStatus } from "./model";
 
 const today = toDateKey(new Date());
 const day = (offset: number) => shiftDate(today, offset);
@@ -181,16 +181,23 @@ function App() {
 
     const rows: FrappeTask[] = filtered.map(task => ({
       id: task.id, name: task.title, start: task.startDate, end: task.dueDate,
-      progress: taskProgress(task.status, task.progress),
+      progress: taskProgressFromEffort(task.status, task.progress, task.estimateHours, task.actualHours),
       custom_class: task.status === "done" ? "task-done" : task.priority === "high" ? "task-high" : "task-default"
     }));
     try {
-      new Gantt(host, rows, {
+      new Gantt(host, rows, ({
         view_mode: timelineMode,
         container_height: Math.max(420, window.innerHeight - 220),
         view_modes: [ganttViewModes.find(mode => mode.name === timelineMode)!, ...ganttViewModes.filter(mode => mode.name !== timelineMode)],
         date_format: "YYYY-MM-DD",
         language: "en",
+        // Compress weekends and configured days off out of the working-time axis.
+        ignore: [
+          "weekend",
+          ...calendarMarkers.holiday.map(marker => marker.date),
+          ...calendarMarkers.leave.map(marker => marker.date),
+          ...calendarMarkers.other.map(marker => marker.date)
+        ],
         holidays: {
           "var(--g-weekend-highlight-color)": "weekend",
           "var(--g-holiday-highlight-color)": calendarMarkers.holiday,
@@ -208,8 +215,19 @@ function App() {
             dueDate: toDateKey(end)
           };
         },
-        on_progress_change: (row, progress) => updateTask(row.id, { progress: taskProgress("in-progress", progress), status: progress >= 100 ? "done" : "in-progress" })
-      });
+        on_progress_change: (row, progress) => {
+          const task = tasks.find(item => item.id === row.id);
+          if (!task) return;
+          const boundedProgress = taskProgress("in-progress", progress);
+          updateTask(row.id, {
+            progress: boundedProgress,
+            ...(task.estimateHours !== undefined
+              ? { actualHours: Math.round(task.estimateHours * boundedProgress / 100 * 100) / 100 }
+              : {}),
+            status: progress >= 100 ? "done" : "in-progress"
+          });
+        }
+      } as ConstructorParameters<typeof Gantt>[2]));
       // Register after Frappe Gantt so its own mouseup handler runs first.
       document.addEventListener("mouseup", flushPendingDateChange);
     } catch {
@@ -328,7 +346,7 @@ function App() {
         </div>
       </main>
 
-      {selectedTask && <TaskEditor task={selectedTask} onClose={() => setSelectedTask(null)} onSave={changes => { updateTask(selectedTask.id, changes); setSelectedTask(null); }} />}
+      {selectedTask && <TaskEditor task={selectedTask} calendarEntries={calendarEntries} onClose={() => setSelectedTask(null)} onSave={changes => { updateTask(selectedTask.id, changes); setSelectedTask(null); }} />}
     </div>
   );
 }
@@ -427,7 +445,7 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
   return <div className="empty-state"><span><ListTodo size={22} /></span><h3>Nothing on your list yet</h3><p>Add a task to give your next step a home.</p><button className="primary-button" onClick={onAdd}><Plus size={16} /> Add your first task</button></div>;
 }
 
-function TaskEditor({ task, onClose, onSave }: { task: Task; onClose: () => void; onSave: (changes: Partial<Task>) => void }) {
+function TaskEditor({ task, calendarEntries, onClose, onSave }: { task: Task; calendarEntries: CalendarEntry[]; onClose: () => void; onSave: (changes: Partial<Task>) => void }) {
   const [title, setTitle] = useState(task.title);
   const [notes, setNotes] = useState(task.notes);
   const [status, setStatus] = useState<TaskStatus>(task.status);
@@ -436,7 +454,8 @@ function TaskEditor({ task, onClose, onSave }: { task: Task; onClose: () => void
   const [dueDate, setDueDate] = useState(task.dueDate);
   const [estimateHours, setEstimateHours] = useState(task.estimateHours === undefined ? "" : String(task.estimateHours));
   const [actualHours, setActualHours] = useState(task.actualHours === undefined ? "" : String(task.actualHours));
-  return <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}><form className="task-editor" onSubmit={event => { event.preventDefault(); if (!title.trim()) return; onSave({ title: title.trim(), notes, status, priority, startDate, dueDate: dueDate < startDate ? startDate : dueDate, progress: status === "done" ? 100 : task.progress, estimateHours: parseOptionalHours(estimateHours), actualHours: parseOptionalHours(actualHours) }); }}><header><div><span className="editor-eyebrow">TASK DETAILS</span><h2>Edit task</h2></div><button className="icon-button" type="button" aria-label="Close editor" onClick={onClose}><X size={18} /></button></header><label>Task name<input required autoFocus value={title} onChange={event => setTitle(event.target.value)} /></label><label>Notes<textarea rows={3} value={notes} onChange={event => setNotes(event.target.value)} placeholder="Add context or a next step..." /></label><div className="editor-two-col"><label>Start date<input type="date" value={startDate} onChange={event => setStartDate(event.target.value)} required /></label><label>Due date<input type="date" min={startDate} value={dueDate} onChange={event => setDueDate(event.target.value)} required /></label></div><div className="editor-two-col"><label>Priority<select value={priority} onChange={event => setPriority(event.target.value as TaskPriority)}><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label><label>Status<select value={status} onChange={event => setStatus(event.target.value as TaskStatus)}><option value="todo">To do</option><option value="in-progress">In progress</option><option value="done">Completed</option></select></label></div><div className="editor-two-col effort-inputs"><label>Estimate (hours)<input type="number" min="0" step="0.25" value={estimateHours} onChange={event => setEstimateHours(event.target.value)} placeholder="Not estimated" /></label><label>Actual (hours)<input type="number" min="0" step="0.25" value={actualHours} onChange={event => setActualHours(event.target.value)} placeholder="Not recorded" /></label></div><p className="effort-hint">Enter decimal hours. Leave blank when effort is not known.</p><footer><button type="button" className="secondary-button" onClick={onClose}>Cancel</button><button type="submit" className="primary-button"><Check size={16} /> Save changes</button></footer></form></div>;
+  const scheduledWorkingHours = calculateWorkingHours(startDate, dueDate, calendarEntries);
+  return <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}><form className="task-editor" onSubmit={event => { event.preventDefault(); if (!title.trim()) return; onSave({ title: title.trim(), notes, status, priority, startDate, dueDate: dueDate < startDate ? startDate : dueDate, progress: status === "done" ? 100 : task.progress, estimateHours: parseOptionalHours(estimateHours), actualHours: parseOptionalHours(actualHours) }); }}><header><div><span className="editor-eyebrow">TASK DETAILS</span><h2>Edit task</h2></div><button className="icon-button" type="button" aria-label="Close editor" onClick={onClose}><X size={18} /></button></header><label>Task name<input required autoFocus value={title} onChange={event => setTitle(event.target.value)} /></label><label>Notes<textarea rows={3} value={notes} onChange={event => setNotes(event.target.value)} placeholder="Add context or a next step..." /></label><div className="editor-two-col"><label>Start date<input type="date" value={startDate} onChange={event => setStartDate(event.target.value)} required /></label><label>Due date<input type="date" min={startDate} value={dueDate} onChange={event => setDueDate(event.target.value)} required /></label></div><div className="editor-two-col"><label>Priority<select value={priority} onChange={event => setPriority(event.target.value as TaskPriority)}><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label><label>Status<select value={status} onChange={event => setStatus(event.target.value as TaskStatus)}><option value="todo">To do</option><option value="in-progress">In progress</option><option value="done">Completed</option></select></label></div><div className="editor-two-col effort-inputs"><label>Estimate (hours)<input type="number" min="0" step="0.25" value={estimateHours} onChange={event => setEstimateHours(event.target.value)} placeholder="Not estimated" /></label><label>Actual (hours)<input type="number" min="0" step="0.25" value={actualHours} onChange={event => setActualHours(event.target.value)} placeholder="Not recorded" /></label></div><p className="effort-hint">Scheduled working time: {formatHours(scheduledWorkingHours)} (08:00–12:00, 13:00–17:00). Weekends, holidays and days off are excluded. Progress uses Actual ÷ Estimate when both are entered.</p><footer><button type="button" className="secondary-button" onClick={onClose}>Cancel</button><button type="submit" className="primary-button"><Check size={16} /> Save changes</button></footer></form></div>;
 }
 
 export default App;
