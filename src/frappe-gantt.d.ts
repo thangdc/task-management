@@ -22,7 +22,7 @@ declare module "frappe-gantt" {
     snap_at?: string;
   }
 
-  export type FrappeHolidayDate = string | Date | { date: string | Date; label?: string };
+  export type FrappeHolidayDate = string | Date | { date: string | Date; name?: string; label?: string };
   export type FrappeHolidayDefinition = "weekend" | FrappeHolidayDate[];
 
   export interface FrappeGanttOptions {
