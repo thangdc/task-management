@@ -97,6 +97,38 @@ export function taskProgress(status: TaskStatus, progress: number): number {
   return status === "done" ? 100 : Math.max(0, Math.min(100, Math.round(progress)));
 }
 
+export function taskProgressFromEffort(
+  status: TaskStatus,
+  progress: number,
+  estimateHours?: number,
+  actualHours?: number
+): number {
+  if (status === "done") return 100;
+  if (estimateHours !== undefined && estimateHours > 0 && actualHours !== undefined &&
+      Number.isFinite(estimateHours) && Number.isFinite(actualHours) &&
+      estimateHours >= 0 && actualHours >= 0) {
+    return Math.max(0, Math.min(100, Math.round(actualHours / estimateHours * 100)));
+  }
+  return taskProgress(status, progress);
+}
+
+/** Inclusive date range, with 8 hours per working day: 08:00–12:00 and 13:00–17:00. */
+export function calculateWorkingHours(
+  startDate: string,
+  endDate: string,
+  calendarEntries: CalendarEntry[] = []
+): number {
+  if (!isDateKey(startDate) || !isDateKey(endDate) || endDate < startDate) return 0;
+  let hours = 0;
+  for (let date = startDate; date <= endDate; date = shiftDate(date, 1)) {
+    const weekday = new Date(`${date}T12:00:00`).getDay();
+    const weekend = weekday === 0 || weekday === 6;
+    const dayOff = calendarEntries.some(entry => date >= entry.startDate && date <= entry.endDate);
+    if (!weekend && !dayOff) hours += 8;
+  }
+  return hours;
+}
+
 /** Progress is based on recorded effort whenever both estimate and actual are available. */
 export function taskProgressFromEffort(
   status: TaskStatus,
